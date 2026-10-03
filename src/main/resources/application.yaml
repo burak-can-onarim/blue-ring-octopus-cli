@@ -1,0 +1,11 @@
+spring:
+  application:
+    name: code-analyzer
+
+langchain4j:
+  ollama:
+    chat-model:
+      base-url: http://localhost:11434
+      model-name: qwen2.5-coder
+      temperature: 0.2
+      timeout: 5m
