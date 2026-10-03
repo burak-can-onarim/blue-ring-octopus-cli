@@ -1,1 +1,6 @@
 1791062222491:analyze
+1791067720961:generate
+1791067783485:generate --prompt add swagger integration to project
+1791067836376:generate --prompt add swagger integration to project --out src/main/java/com/bcoworks/codeanalyzer/swagger/SwaggerTrial.java
+1791068008319:test
+1791068011967:analyze
