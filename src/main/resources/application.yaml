@@ -1,6 +1,13 @@
 spring:
   application:
     name: code-analyzer
+  shell:
+    interactive:
+      enabled: true
+
+logging:
+  level:
+    org.springframework.shell: DEBUG
 
 langchain4j:
   ollama:
