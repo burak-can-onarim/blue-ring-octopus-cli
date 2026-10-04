@@ -18,6 +18,7 @@ target/
 *.iws
 *.iml
 *.ipr
+.DS_Store
 
 ### NetBeans ###
 /nbproject/private/
@@ -31,3 +32,10 @@ build/
 
 ### VS Code ###
 .vscode/
+
+# JRE ve Derleme Çıktıları (Git'e atılmamalı)
+/jre/
+*.exe
+/target/
+*.jar
+*.jsa
