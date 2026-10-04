@@ -9,11 +9,17 @@ import com.googlecode.lanterna.screen.TerminalScreen;
 import com.googlecode.lanterna.terminal.DefaultTerminalFactory;
 import com.googlecode.lanterna.terminal.Terminal;
 import com.googlecode.lanterna.terminal.swing.SwingTerminalFontConfiguration;
+import com.googlecode.lanterna.terminal.swing.SwingTerminalFrame;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.stereotype.Component;
 
+import javax.swing.WindowConstants;
+import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.GraphicsEnvironment;
+import java.awt.Toolkit;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.HashSet;
@@ -25,7 +31,7 @@ import java.util.concurrent.ExecutorService;
 public class TuiLauncher {
 
     /**
-     * Ekrana sığmazsa küçült. Tam banner + sağ panel için en az ~135 sütun gerekir.
+     * Açılış boyutu aynı zamanda en küçük boyuttur (Swing penceresinde).
      */
     private static final TerminalSize INITIAL_SIZE = new TerminalSize(140, 38);
     private static final int FONT_SIZE = 15;
@@ -67,7 +73,10 @@ public class TuiLauncher {
             gui.setTheme(OctopusTheme.main());
 
             MainWindow main = new MainWindow(gui, appContext, dispatcher, aiExecutor, banner);
-            terminal.addResizeListener((t, size) -> main.onResize(size));
+            terminal.addResizeListener((_, size) -> main.onResize(size));
+            if (terminal instanceof SwingTerminalFrame frame) {
+                configureFrame(frame, main);
+            }
             try {
                 main.show();
             } finally {
@@ -75,6 +84,27 @@ public class TuiLauncher {
             }
         } finally {
             screen.stopScreen();
+        }
+    }
+
+    /**
+     * X düğmesi doğrudan kapatmaz, onay ister. Açılış boyutu en küçük boyut olur.
+     */
+    private static void configureFrame(SwingTerminalFrame frame, MainWindow main) {
+        frame.setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE);
+        frame.addWindowListener(new WindowAdapter() {
+            @Override
+            public void windowClosing(WindowEvent e) {
+                main.requestExit();
+            }
+        });
+
+        Dimension size = frame.getSize();
+        if (size.width > 0 && size.height > 0) {
+            Dimension screen = Toolkit.getDefaultToolkit().getScreenSize();
+            frame.setMinimumSize(new Dimension(
+                    Math.min(size.width, screen.width),
+                    Math.min(size.height, screen.height)));
         }
     }
 

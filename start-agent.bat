@@ -30,4 +30,4 @@ echo %AI_MODEL_NAME% modeli ile ajan baslatiliyor, lutfen bekleyin...
 echo =========================================
 
 :: Ortam değişkenini Spring Boot'a aktararak jar'ı interaktif modda başlatıyoruz
-java -Dfile.encoding=UTF-8 --enable-native-access=ALL-UNNAMED -jar target/code-analyzer-0.0.1-SNAPSHOT.jar ui
+start "" javaw -Dfile.encoding=UTF-8 --enable-native-access=ALL-UNNAMED -jar target\code-analyzer-0.1.0-SNAPSHOT.jar ui

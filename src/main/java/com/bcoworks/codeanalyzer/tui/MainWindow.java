@@ -9,6 +9,7 @@ import com.googlecode.lanterna.TerminalSize;
 import com.googlecode.lanterna.TextColor;
 import com.googlecode.lanterna.gui2.*;
 import com.googlecode.lanterna.input.KeyStroke;
+import com.googlecode.lanterna.input.KeyType;
 import lombok.extern.slf4j.Slf4j;
 
 import java.util.ArrayList;
@@ -25,7 +26,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 /**
  * ┌ uygulama çerçevesi ───────────────────────┬ sağ panel ┐
  * │ banner                                    │ (ayrılmış)│
- * │ prompt alanı (çıktı + giriş)              │           │
+ * │ prompt alanı (çıktı + çok satırlı giriş)  │           │
  * │ path alanı                                │           │
  * ├ mod ┬ loading / step ──────────────────────┴───────────┤
  * │ kısayollar                                            │
@@ -47,7 +48,8 @@ final class MainWindow {
             .max()
             .orElse(12) + 4;
     private static final String KEYS =
-            " Enter Çalıştır  ·  ↑↓ Prompt/Path  ·  Tab Mod  ·  PgUp/PgDn Kaydır  ·  Esc Çıkış";
+            " Enter Gönder · Shift+Enter Yeni satır · ↑↓ Geçmiş · Ctrl+P Prompt/Path"
+                    + " · Tab Mod · PgUp/PgDn Çıktıyı kaydır · Esc Çıkış";
 
     private final MultiWindowTextGUI gui;
     private final AppContext appContext;
@@ -58,12 +60,16 @@ final class MainWindow {
     private final BasicWindow window = new BasicWindow("Blue Ring Octopus CLI");
     private final Panel bannerPanel = new Panel(linear(Direction.VERTICAL, 0));
     private final TextBox transcript = new TextBox(new TerminalSize(40, 6), TextBox.Style.MULTI_LINE).setReadOnly(true);
-    private final TextBox promptInput = new TextBox(new TerminalSize(40, 1));
+    private final PromptArea promptInput = new PromptArea();
     private final TextBox pathInput = new TextBox(new TerminalSize(40, 1));
     private final Label hintLabel = new Label("");
     private final Label modeLabel = new Label("");
     private final Label stepLabel = new Label("");
     private final Label progressLabel = new Label(BLANK_PROGRESS);
+
+    private final InputHistory promptHistory = new InputHistory();
+    private final InputHistory pathHistory = new InputHistory();
+    private final AtomicBoolean confirmingExit = new AtomicBoolean(false);
 
     private final AtomicBoolean busy = new AtomicBoolean(false);
     private final ScheduledExecutorService spinnerExecutor = Executors.newSingleThreadScheduledExecutor(r -> {
@@ -118,6 +124,13 @@ final class MainWindow {
      */
     void onResize(TerminalSize size) {
         ui(() -> applyBanner(size));
+    }
+
+    /**
+     * Çıkış onayı ister. Herhangi bir thread'den çağrılabilir (örn. pencere X düğmesi).
+     */
+    void requestExit() {
+        ui(this::confirmExit);
     }
 
     // ---------------------------------------------------------------- layout
@@ -191,7 +204,7 @@ final class MainWindow {
         content.addComponent(mainRow);
         content.addComponent(statusRow);
         content.addComponent(keysLabel);
-        Border frame = content.withBorder(Borders.doubleLine(" Blue Ring Octopus CLI "));
+        Border frame = content.withBorder(Borders.doubleLine());
 
         window.setHints(List.of(Window.Hint.FULL_SCREEN, Window.Hint.NO_DECORATIONS, Window.Hint.NO_POST_RENDERING));
         window.setComponent(frame);
@@ -223,7 +236,7 @@ final class MainWindow {
         return box;
     }
 
-    private Panel inputRow(TextColor signColor, TextBox box) {
+    private Panel inputRow(TextColor signColor, Component box) {
         Label signLabel = new Label(" » ");
         signLabel.setForegroundColor(signColor);
         box.setLayoutData(grow());
@@ -268,7 +281,17 @@ final class MainWindow {
     private void handleKey(KeyStroke key, AtomicBoolean deliverEvent) {
         switch (key.getKeyType()) {
             case Enter -> {
+                boolean newline = key.isShiftDown() || key.isAltDown();
+                if (newline && focusedOnPrompt()) {
+                    return; // PromptArea yeni satır ekler
+                }
                 deliverEvent.set(false);
+                if (newline) {
+                    return; // path alanında yeni satır anlamsız
+                }
+                if (focusedOnPrompt() && promptInput.continueLine()) {
+                    return; // satır sonundaki "\" yeni satıra dönüştü
+                }
                 submit();
             }
             case Tab -> {
@@ -279,27 +302,38 @@ final class MainWindow {
                 deliverEvent.set(false);
                 switchMode(false);
             }
-            case ArrowDown -> {
-                deliverEvent.set(false);
-                focus(pathInput);
-            }
             case ArrowUp -> {
                 deliverEvent.set(false);
-                focus(promptInput);
+                recall(true);
+            }
+            case ArrowDown -> {
+                deliverEvent.set(false);
+                recall(false);
             }
             case PageUp, PageDown -> {
                 deliverEvent.set(false);
-                transcript.handleInput(key); // giriş kutusu odaktayken çıktıyı kaydır
+                transcript.handleInput(key); // giriş alanı odaktayken çıktıyı kaydır
             }
-            case Escape, EOF -> {
+            case Escape -> {
+                deliverEvent.set(false);
+                requestExit();
+            }
+            case EOF -> { // terminal yok oldu, soru sorulamaz
                 deliverEvent.set(false);
                 window.close();
             }
             case Character -> {
                 Character c = key.getCharacter();
-                if (key.isCtrlDown() && c != null && Character.toLowerCase(c) == 'c') {
-                    deliverEvent.set(false);
-                    window.close();
+                // AltGr, Ctrl+Alt olarak gelebilir; yalnızca salt Ctrl kısayol sayılır
+                if (c != null && key.isCtrlDown() && !key.isAltDown()) {
+                    char lower = Character.toLowerCase(c);
+                    if (lower == 'c') {
+                        deliverEvent.set(false);
+                        requestExit();
+                    } else if (lower == 'p') {
+                        deliverEvent.set(false);
+                        toggleFocus();
+                    }
                 }
             }
             default -> {
@@ -307,9 +341,35 @@ final class MainWindow {
         }
     }
 
-    private void focus(Interactable target) {
-        window.setFocusedInteractable(target);
+    private boolean focusedOnPrompt() {
+        return window.getFocusedInteractable() == promptInput;
+    }
+
+    private void toggleFocus() {
+        window.setFocusedInteractable(focusedOnPrompt() ? pathInput : promptInput);
         refreshHint();
+    }
+
+    /**
+     * ↑ (older=true) ve ↓ (older=false): önce satırlar arası gezinir, uçlarda geçmişi getirir.
+     */
+    private void recall(boolean older) {
+        if (!focusedOnPrompt()) {
+            String value = older ? pathHistory.previous(pathInput.getText()) : pathHistory.next();
+            if (value != null) {
+                pathInput.setText(value);
+                pathInput.setCaretPosition(0, value.length());
+            }
+            return;
+        }
+        boolean moved = older ? promptInput.moveCaretUp() : promptInput.moveCaretDown();
+        if (moved) {
+            return;
+        }
+        String value = older ? promptHistory.previous(promptInput.getText()) : promptHistory.next();
+        if (value != null) {
+            promptInput.setText(value);
+        }
     }
 
     private void switchMode(boolean forward) {
@@ -326,8 +386,82 @@ final class MainWindow {
 
     private void refreshHint() {
         AppMode mode = appContext.getCurrentMode();
-        boolean onPath = window.getFocusedInteractable() == pathInput;
-        hintLabel.setText(onPath ? " Path: " + mode.getPathHint() : " Prompt: " + mode.getPromptHint());
+        hintLabel.setText(focusedOnPrompt()
+                ? " Prompt: " + mode.getPromptHint()
+                : " Path: " + mode.getPathHint());
+    }
+
+    // ---------------------------------------------------------------- exit
+
+    private void confirmExit() {
+        if (!confirmingExit.compareAndSet(false, true)) {
+            return; // onay kutusu zaten açık
+        }
+        try {
+            String message = busy.get()
+                    ? "Devam eden bir işlem var, çıkarsanız yarıda kesilir.\nUygulamadan çıkmak istiyor musunuz?"
+                    : "Uygulamadan çıkmak istiyor musunuz?";
+            if (askYesNo(message)) {
+                window.close();
+            }
+        } finally {
+            confirmingExit.set(false);
+        }
+    }
+
+    /**
+     * Varsayılan odak "Hayır"da. E/Y evet, H/N hayır, Esc iptal.
+     */
+    private boolean askYesNo(String message) {
+        AtomicBoolean yes = new AtomicBoolean(false);
+        BasicWindow dialog = new BasicWindow("Çıkış");
+        dialog.setHints(List.of(Window.Hint.CENTERED, Window.Hint.MODAL));
+
+        Label label = new Label(message);
+        label.setForegroundColor(OctopusTheme.TEXT);
+
+        Button no = new Button("Hayır", dialog::close);
+        Button yesButton = new Button("Evet", () -> {
+            yes.set(true);
+            dialog.close();
+        });
+        Panel buttons = new Panel(linear(Direction.HORIZONTAL, 2));
+        buttons.setLayoutData(LinearLayout.createLayoutData(LinearLayout.Alignment.Center));
+        buttons.addComponent(no);
+        buttons.addComponent(yesButton);
+
+        Panel content = new Panel(linear(Direction.VERTICAL, 1));
+        content.addComponent(label);
+        content.addComponent(buttons);
+        dialog.setComponent(content);
+        dialog.setFocusedInteractable(no);
+
+        dialog.addWindowListener(new WindowListenerAdapter() {
+            @Override
+            public void onInput(Window basePane, KeyStroke key, AtomicBoolean deliverEvent) {
+                if (key.getKeyType() == KeyType.Escape) {
+                    deliverEvent.set(false);
+                    dialog.close();
+                    return;
+                }
+                Character c = key.getKeyType() == KeyType.Character ? key.getCharacter() : null;
+                if (c == null) {
+                    return;
+                }
+                char lower = Character.toLowerCase(c);
+                if (lower == 'e' || lower == 'y') {
+                    deliverEvent.set(false);
+                    yes.set(true);
+                    dialog.close();
+                } else if (lower == 'h' || lower == 'n') {
+                    deliverEvent.set(false);
+                    dialog.close();
+                }
+            }
+        });
+
+        gui.addWindowAndWait(dialog);
+        return yes.get();
     }
 
     // ---------------------------------------------------------------- execution
@@ -350,6 +484,8 @@ final class MainWindow {
             return;
         }
 
+        promptHistory.add(prompt);
+        pathHistory.add(path);
         promptInput.setText("");
         if (mode == AppMode.KOD_GENERATE) {
             pathInput.setText(""); // aynı dosyaya ikinci kez yazma hatasını önler
@@ -430,6 +566,9 @@ final class MainWindow {
     }
 
     private void appendOutput(String text) {
+        // Kullanıcı yukarı kaydırmışsa yeni çıktı onu en alta atmasın
+        boolean following = transcript.getCaretPosition().getRow() >= transcript.getLineCount() - 1;
+
         int columns = gui.getScreen().getTerminalSize().getColumns();
         // çerçeve(2) + kutu(2) + kaydırma çubuğu(1) + pay(1) + sağ panel
         int width = Math.max(20, columns - 6 - (SHOW_SIDE_PANEL ? SIDE_PANEL_WIDTH + 1 : 0));
@@ -438,7 +577,9 @@ final class MainWindow {
                 transcript.addLine(part);
             }
         }
-        transcript.setCaretPosition(transcript.getLineCount() - 1, 0);
+        if (following) {
+            transcript.setCaretPosition(transcript.getLineCount() - 1, 0);
+        }
     }
 
     /**
