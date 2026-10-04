@@ -1,5 +1,7 @@
 @echo off
-title Code Analyzer AI
+chcp 65001 > nul
+
+title Blue Ring Octopus CLI
 color 0A
 cls
 
@@ -28,4 +30,4 @@ echo %AI_MODEL_NAME% modeli ile ajan baslatiliyor, lutfen bekleyin...
 echo =========================================
 
 :: Ortam değişkenini Spring Boot'a aktararak jar'ı interaktif modda başlatıyoruz
-java --enable-native-access=ALL-UNNAMED -jar target/code-analyzer-0.0.1-SNAPSHOT.jar
+java -Dfile.encoding=UTF-8 --enable-native-access=ALL-UNNAMED -jar target/code-analyzer-0.0.1-SNAPSHOT.jar ui

@@ -3,17 +3,20 @@ spring:
     name: code-analyzer
   shell:
     interactive:
-      enabled: true
+      enabled: false
+  main:
+    banner-mode: off # Spring Boot yazısını kaldırır
 
 logging:
   level:
-    org.springframework.shell: DEBUG
+    root: WARN # INFO loglarını gizler
+    org.jline: ERROR # Dumb terminal uyarılarını gizler
 
 langchain4j:
   ollama:
     chat-model:
-#      base-url: http://localhost:11434             # Localde JDK25 varsa ve EXE dosyası ile aynı klasördeyse
-      base-url: http://host.docker.internal:11434   # Docker ile ayağa kaldırıldıysa
+      base-url: http://localhost:11434                # Localde JDK25 varsa ve EXE dosyası ile aynı klasördeyse
+      # base-url: http://host.docker.internal:11434   # Docker ile ayağa kaldırıldıysa
       model-name: ${AI_MODEL_NAME:qwen2.5-coder}
       temperature: 0.2
       timeout: 5m

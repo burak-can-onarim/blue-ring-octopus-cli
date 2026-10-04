@@ -36,6 +36,7 @@ build/
 # JRE ve Derleme Çıktıları (Git'e atılmamalı)
 /jre/
 *.exe
+*.zip
 /target/
 *.jar
 *.jsa
