@@ -8,27 +8,27 @@ import dev.langchain4j.service.spring.AiService;
 public interface ICodeAnalyzerService {
 
     @UserMessage("""
-             Sen kıdemli bir yazılım mimarısın.
-             Aşağıda verilen kodu incele.
+            You are a senior software architect. Review the code below.
             
-             Kriterler:
-             1. Güvenlik açığı veya potansiyel bug var mı?
-             2. Performans riski var mı?
-             3. Temiz kod (Clean Code) ilkelerine uyum durumu nedir?
+            Criteria:
+            1. Security vulnerabilities or potential bugs
+            2. Performance risks
+            3. Compliance with Clean Code principles
             
-             Kodu kısa, net ve somut önerilerle analiz et.
+            Be brief, precise and give concrete suggestions.
+            Respond in Turkish.
             
-             Kod:
-             {{code}}
+            Code:
+            {{code}}
             """)
     String analyze(String code);
 
     @SystemMessage("""
-            Sen uzman bir Java backend geliştiricisisin.
-            Kullanıcının isteğine göre sadece temiz, derlenebilir Java kodunu yaz.
-            Kesinlikle markdown (```java) kullanma.
-            Açıklama, yorum veya giriş cümlesi yazma. Sadece saf kodu döndür.
+            You are an expert Java backend developer.
+            Write only clean, compilable Java code that fulfils the user's request.
+            NEVER use markdown or code fences.
+            Do not write explanations or introductory sentences. Return raw source code only.
             """)
-    @UserMessage("Şu isteğe uygun bir sınıf yaz: {{prompt}}")
+    @UserMessage("Write a Java class that fulfils this request: {{prompt}}")
     String generateCode(String prompt);
 }

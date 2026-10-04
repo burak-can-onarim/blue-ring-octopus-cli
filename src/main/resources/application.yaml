@@ -8,9 +8,13 @@ spring:
     banner-mode: off # Spring Boot yazısını kaldırır
 
 logging:
+  file:
+    name: logs/octopus.log
+  threshold:
+    console: "OFF"
   level:
-    root: WARN # INFO loglarını gizler
-    org.jline: ERROR # Dumb terminal uyarılarını gizler
+    root: WARN
+    org.jline: ERROR
 
 langchain4j:
   ollama:

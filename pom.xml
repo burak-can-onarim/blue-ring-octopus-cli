@@ -10,7 +10,7 @@
     </parent>
     <groupId>com.bcoworks</groupId>
     <artifactId>code-analyzer</artifactId>
-    <version>0.0.1-SNAPSHOT</version>
+    <version>0.1.0-SNAPSHOT</version>
     <name/>
     <description/>
     <url/>
@@ -63,6 +63,11 @@
             <groupId>net.java.dev.jna</groupId>
             <artifactId>jna</artifactId>
             <version>5.14.0</version>
+        </dependency>
+        <dependency>
+            <groupId>com.googlecode.lanterna</groupId>
+            <artifactId>lanterna</artifactId>
+            <version>3.1.5</version>
         </dependency>
     </dependencies>
 

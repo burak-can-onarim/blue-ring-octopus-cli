@@ -1,23 +1,21 @@
 package com.bcoworks.codeanalyzer.config;
 
-import com.bcoworks.codeanalyzer.command.DashboardCommand;
+import com.bcoworks.codeanalyzer.tui.TuiLauncher;
+import lombok.RequiredArgsConstructor;
 import org.springframework.boot.ApplicationArguments;
 import org.springframework.boot.ApplicationRunner;
 import org.springframework.stereotype.Component;
 
 @Component
+@RequiredArgsConstructor
 public class TuiStartupListener implements ApplicationRunner {
 
-    private final DashboardCommand dashboardCommand;
-
-    public TuiStartupListener(DashboardCommand dashboardCommand) {
-        this.dashboardCommand = dashboardCommand;
-    }
+    private final TuiLauncher launcher;
 
     @Override
-    public void run(ApplicationArguments args) {
+    public void run(ApplicationArguments args) throws Exception {
         if (args.getSourceArgs().length == 0) {
-            dashboardCommand.startDashboard();
+            launcher.launch();
         }
     }
 }
