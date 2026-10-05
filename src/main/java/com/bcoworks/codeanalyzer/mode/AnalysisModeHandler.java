@@ -1,6 +1,7 @@
 package com.bcoworks.codeanalyzer.mode;
 
 import com.bcoworks.codeanalyzer.context.AppMode;
+import com.bcoworks.codeanalyzer.model.AiServiceRegistry;
 import com.bcoworks.codeanalyzer.service.ICodeAnalyzerService;
 import com.bcoworks.codeanalyzer.service.SourceCodeScanner;
 import com.bcoworks.codeanalyzer.util.PathUtils;
@@ -21,7 +22,7 @@ public class AnalysisModeHandler implements IModeHandler {
      */
     private static final long MAX_FILE_BYTES = 64 * 1024;
 
-    private final ICodeAnalyzerService aiService;
+    private final AiServiceRegistry ai;
     private final SourceCodeScanner scanner;
 
     @Override
@@ -50,7 +51,12 @@ public class AnalysisModeHandler implements IModeHandler {
         int total = files.size();
         console.println("%d dosya bulundu: %s".formatted(total, target));
 
+        ICodeAnalyzerService service = ai.forMode(AppMode.KOD_ANALIZI);
+
         for (int i = 0; i < total; i++) {
+            if (console.isCancelled()) {
+                return;
+            }
             Path file = files.get(i);
             console.progress(i, total);
             try {
@@ -65,7 +71,7 @@ public class AnalysisModeHandler implements IModeHandler {
                     continue;
                 }
                 console.step("Analiz ediliyor [%d/%d] %s".formatted(i + 1, total, file.getFileName()));
-                String result = aiService.analyze(code);
+                String result = service.analyze(code);
                 console.println("\n--- " + file.getFileName() + " ---\n" + result);
             } catch (IOException e) {
                 console.println("\n--- " + file.getFileName() + " okunamadı: " + e.getMessage());

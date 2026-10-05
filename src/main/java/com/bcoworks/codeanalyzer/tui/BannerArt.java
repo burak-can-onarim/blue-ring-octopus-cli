@@ -9,27 +9,29 @@ import java.nio.charset.StandardCharsets;
 import java.util.List;
 
 /**
- * banner.txt'i okur, ayraç satırlarını ve ortak girintiyi kırpar, genişliğe göre sürüm seçer.
+ * banner.txt'i okur, {{version}} yer tutucusunu doldurur, ayraç satırlarını ve ortak girintiyi kırpar.
  */
 final class BannerArt {
 
-    private static final List<String> COMPACT =
-            List.of("BLUE RING OCTOPUS CLI  ·  Local AI Code Analyzer  ·  v0.1.0");
+    private static final String VERSION_TOKEN = "{{version}}";
     private static final int MIN_ROWS_FOR_FULL = 30;
 
     private final List<String> full;
+    private final List<String> compact;
     private final int fullWidth;
 
-    private BannerArt(List<String> full) {
+    private BannerArt(List<String> full, String version) {
         this.full = full;
+        this.compact = List.of("BLUE RING OCTOPUS CLI  ·  Local AI Code Analyzer  ·  v" + version);
         this.fullWidth = full.stream().mapToInt(String::length).max().orElse(0);
     }
 
-    static BannerArt load() {
+    static BannerArt load(String version) {
         try (InputStream in = new ClassPathResource("banner.txt").getInputStream()) {
-            return new BannerArt(clean(StreamUtils.copyToString(in, StandardCharsets.UTF_8)));
+            String raw = StreamUtils.copyToString(in, StandardCharsets.UTF_8).replace(VERSION_TOKEN, version);
+            return new BannerArt(clean(raw), version);
         } catch (IOException e) {
-            return new BannerArt(List.of());
+            return new BannerArt(List.of(), version);
         }
     }
 
@@ -38,7 +40,7 @@ final class BannerArt {
      */
     List<String> choose(int availableColumns, int terminalRows) {
         boolean fits = !full.isEmpty() && fullWidth <= availableColumns && terminalRows >= MIN_ROWS_FOR_FULL;
-        return fits ? full : COMPACT;
+        return fits ? full : compact;
     }
 
     private static List<String> clean(String raw) {

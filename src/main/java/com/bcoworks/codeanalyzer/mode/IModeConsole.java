@@ -18,6 +18,13 @@ public interface IModeConsole {
     default void progress(int done, int total) {
     }
 
+    /**
+     * İşlem iptal edildiyse true. Uzun döngülerde ve dosya yazmadan önce kontrol edilmelidir.
+     */
+    default boolean isCancelled() {
+        return false;
+    }
+
     static IModeConsole stdout() {
         return new IModeConsole() {
             @Override

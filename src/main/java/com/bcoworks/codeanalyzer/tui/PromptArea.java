@@ -73,6 +73,21 @@ final class PromptArea extends AbstractInteractableComponent<PromptArea> {
     }
 
     /**
+     * Panodan gelen metni imlecin olduğu yere ekler. Satır sonlarını \n'e çevirir, kontrol karakterlerini atar.
+     */
+    void insertText(String value) {
+        if (value == null || value.isEmpty()) {
+            return;
+        }
+        String normalized = value.replace("\r\n", "\n").replace('\r', '\n').replace("\t", "    ");
+        StringBuilder clean = new StringBuilder(normalized.length());
+        normalized.chars()
+                .filter(ch -> ch == '\n' || !Character.isISOControl(ch))
+                .forEach(ch -> clean.append((char) ch));
+        insert(clean.toString());
+    }
+
+    /**
      * İmlecin hemen solunda "\" varsa onu satır sonuna çevirir (kısayol tuşu olmayan terminaller için).
      */
     boolean continueLine() {

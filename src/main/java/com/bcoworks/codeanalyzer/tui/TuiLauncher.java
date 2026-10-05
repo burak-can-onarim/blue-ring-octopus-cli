@@ -1,7 +1,10 @@
 package com.bcoworks.codeanalyzer.tui;
 
+import com.bcoworks.codeanalyzer.config.AppInfo;
 import com.bcoworks.codeanalyzer.context.AppContext;
 import com.bcoworks.codeanalyzer.mode.ModeDispatcher;
+import com.bcoworks.codeanalyzer.model.InstalledModels;
+import com.bcoworks.codeanalyzer.model.ModelSettings;
 import com.googlecode.lanterna.TerminalSize;
 import com.googlecode.lanterna.gui2.MultiWindowTextGUI;
 import com.googlecode.lanterna.screen.Screen;
@@ -41,14 +44,22 @@ public class TuiLauncher {
     private final AppContext appContext;
     private final ModeDispatcher dispatcher;
     private final ExecutorService aiExecutor;
-    private final BannerArt banner = BannerArt.load();
+    private final BannerArt banner;
+    private final ModelSettings modelSettings;
+    private final InstalledModels installedModels;
 
     public TuiLauncher(AppContext appContext,
                        ModeDispatcher dispatcher,
-                       @Qualifier("aiTaskExecutor") ExecutorService aiExecutor) {
+                       @Qualifier("aiTaskExecutor") ExecutorService aiExecutor,
+                       AppInfo appInfo,
+                       ModelSettings modelSettings,
+                       InstalledModels installedModels) {
         this.appContext = appContext;
         this.dispatcher = dispatcher;
         this.aiExecutor = aiExecutor;
+        this.banner = BannerArt.load(appInfo.version());
+        this.modelSettings = modelSettings;
+        this.installedModels = installedModels;
     }
 
     /**
@@ -72,7 +83,7 @@ public class TuiLauncher {
             MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
             gui.setTheme(OctopusTheme.main());
 
-            MainWindow main = new MainWindow(gui, appContext, dispatcher, aiExecutor, banner);
+            MainWindow main = new MainWindow(gui, appContext, dispatcher, aiExecutor, banner, modelSettings, installedModels);
             terminal.addResizeListener((_, size) -> main.onResize(size));
             if (terminal instanceof SwingTerminalFrame frame) {
                 configureFrame(frame, main);

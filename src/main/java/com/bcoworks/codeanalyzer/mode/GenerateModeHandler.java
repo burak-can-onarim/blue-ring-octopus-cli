@@ -1,7 +1,7 @@
 package com.bcoworks.codeanalyzer.mode;
 
 import com.bcoworks.codeanalyzer.context.AppMode;
-import com.bcoworks.codeanalyzer.service.ICodeAnalyzerService;
+import com.bcoworks.codeanalyzer.model.AiServiceRegistry;
 import com.bcoworks.codeanalyzer.util.PathUtils;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -32,7 +32,7 @@ public class GenerateModeHandler implements IModeHandler {
     private static final Pattern FENCED_BLOCK =
             Pattern.compile("(?s)" + FENCE + "[\\w+-]*\\s*\\R(.*?)\\R?" + FENCE);
 
-    private final ICodeAnalyzerService aiService;
+    private final AiServiceRegistry ai;
 
     @Override
     public AppMode mode() {
@@ -56,7 +56,11 @@ public class GenerateModeHandler implements IModeHandler {
         }
 
         console.step("Model kod üretiyor...");
-        String code = stripMarkdownFences(aiService.generateCode(prompt));
+        String raw = ai.forMode(AppMode.KOD_GENERATE).generateCode(prompt);
+        if (console.isCancelled()) {
+            return; // iptal edildi: dosya yazılmaz
+        }
+        String code = stripMarkdownFences(raw);
 
         Matcher type = TYPE_DECLARATION.matcher(code);
         if (!type.find()) {

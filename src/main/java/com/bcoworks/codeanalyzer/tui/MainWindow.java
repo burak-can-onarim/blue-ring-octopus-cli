@@ -5,6 +5,10 @@ import com.bcoworks.codeanalyzer.context.AppMode;
 import com.bcoworks.codeanalyzer.mode.IModeConsole;
 import com.bcoworks.codeanalyzer.mode.ModeDispatcher;
 import com.bcoworks.codeanalyzer.mode.ModeRequest;
+import com.bcoworks.codeanalyzer.model.InstalledModels;
+import com.bcoworks.codeanalyzer.model.ModelCatalog;
+import com.bcoworks.codeanalyzer.model.ModelSettings;
+import com.bcoworks.codeanalyzer.util.PathUtils;
 import com.googlecode.lanterna.TerminalSize;
 import com.googlecode.lanterna.TextColor;
 import com.googlecode.lanterna.gui2.*;
@@ -15,8 +19,10 @@ import lombok.extern.slf4j.Slf4j;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Optional;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
@@ -24,21 +30,19 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 /**
- * ┌ uygulama çerçevesi ───────────────────────┬ sağ panel ┐
- * │ banner                                    │ (ayrılmış)│
- * │ prompt alanı (çıktı + çok satırlı giriş)  │           │
- * │ path alanı                                │           │
- * ├ mod ┬ loading / step ──────────────────────┴───────────┤
- * │ kısayollar                                            │
+ * ┌ uygulama çerçevesi ───────────────────────┬ model paneli ┐
+ * │ banner                                    │ mod başına   │
+ * │ prompt alanı (çıktı + çok satırlı giriş)  │ model seçimi │
+ * │ path alanı                                │              │
+ * ├ mod ┬ loading / step ──────────────────────┼ aktif model ─┤
+ * │ kısayollar                                               │
  */
 @Slf4j
 final class MainWindow {
 
-    /**
-     * Sağ pop-up alanı. false yapılırsa hiç yer kaplamaz.
-     */
-    private static final boolean SHOW_SIDE_PANEL = true;
     private static final int SIDE_PANEL_WIDTH = 30; // kenarlık dahil
+    private static final int SIDE_INNER = SIDE_PANEL_WIDTH - 2;
+    private static final int MODEL_NAME_COLS = 22; // "● " + ad + " " + durum = 26 sütun
 
     private static final String[] SPINNER = {"|", "/", "-", "\\"};
     private static final int PROGRESS_CELLS = 12;
@@ -47,15 +51,19 @@ final class MainWindow {
             .mapToInt(mode -> mode.getDisplayName().length())
             .max()
             .orElse(12) + 4;
-    private static final String KEYS =
-            " Enter Gönder · Shift+Enter Yeni satır · ↑↓ Geçmiş · Ctrl+P Prompt/Path"
-                    + " · Tab Mod · PgUp/PgDn Çıktıyı kaydır · Esc Çıkış";
+    private static final long NOTICE_MILLIS = 3_000;
+    private static final String KEYS_1 =
+            " Enter Gönder · Shift+Enter Yeni satır · ↑↓ Geçmiş · Tab Mod · PgUp/PgDn Çıktıyı kaydır";
+    private static final String KEYS_2 =
+            " Ctrl+P Prompt/Path · Ctrl+L Model · Ctrl+V Yapıştır · Ctrl+O Çıktıyı kopyala · Esc İptal / Çıkış";
 
     private final MultiWindowTextGUI gui;
     private final AppContext appContext;
     private final ModeDispatcher dispatcher;
     private final ExecutorService aiExecutor;
     private final BannerArt banner;
+    private final ModelSettings modelSettings;
+    private final InstalledModels installedModels;
 
     private final BasicWindow window = new BasicWindow("Blue Ring Octopus CLI");
     private final Panel bannerPanel = new Panel(linear(Direction.VERTICAL, 0));
@@ -67,9 +75,16 @@ final class MainWindow {
     private final Label stepLabel = new Label("");
     private final Label progressLabel = new Label(BLANK_PROGRESS);
 
+    private final Label modelModeLabel = new Label("");
+    private final Label modelHintLabel = new Label("");
+    private final Label activeModelLabel = new Label("");
+    private final ActionListBox modelList = new ActionListBox(new TerminalSize(SIDE_INNER, 8));
+    private List<String> modelRows = List.of();
+
     private final InputHistory promptHistory = new InputHistory();
     private final InputHistory pathHistory = new InputHistory();
-    private final AtomicBoolean confirmingExit = new AtomicBoolean(false);
+    private final AtomicBoolean dialogOpen = new AtomicBoolean(false);
+    private final StringBuilder lastOutput = new StringBuilder(); // yalnızca UI thread'i dokunur
 
     private final AtomicBoolean busy = new AtomicBoolean(false);
     private final ScheduledExecutorService spinnerExecutor = Executors.newSingleThreadScheduledExecutor(r -> {
@@ -77,37 +92,74 @@ final class MainWindow {
         thread.setDaemon(true);
         return thread;
     });
+    private volatile Job activeJob;
     private volatile String currentStep = "";
     private volatile int progressDone;
     private volatile int progressTotal;
+    private volatile long noticeUntil;
     private ScheduledFuture<?> spinnerTask;
     private List<String> shownBanner = List.of();
 
-    private final IModeConsole console = new IModeConsole() {
+    /**
+     * Çalışan tek bir işlem. İptal edilince çıktıları yok sayılır, arayüz hemen serbest kalır.
+     */
+    private final class Job implements IModeConsole {
+
+        private volatile boolean cancelled;
+        private volatile Future<?> future;
+
         @Override
         public void step(String message) {
-            currentStep = message;
+            if (!cancelled) {
+                currentStep = message;
+            }
         }
 
         @Override
         public void println(String text) {
-            ui(() -> appendOutput(text));
+            if (cancelled) {
+                return;
+            }
+            ui(() -> {
+                if (!cancelled) {
+                    appendOutput(text);
+                    lastOutput.append(text).append('\n');
+                }
+            });
         }
 
         @Override
         public void progress(int done, int total) {
-            progressDone = done;
-            progressTotal = total;
+            if (!cancelled) {
+                progressDone = done;
+                progressTotal = total;
+            }
         }
-    };
+
+        @Override
+        public boolean isCancelled() {
+            return cancelled;
+        }
+
+        void cancel() {
+            cancelled = true;
+            Future<?> running = future;
+            if (running != null) {
+                running.cancel(true); // thread'e interrupt gönderir
+            }
+        }
+    }
 
     MainWindow(MultiWindowTextGUI gui, AppContext appContext, ModeDispatcher dispatcher,
-               ExecutorService aiExecutor, BannerArt banner) {
+               ExecutorService aiExecutor, BannerArt banner,
+               ModelSettings modelSettings, InstalledModels installedModels) {
         this.gui = gui;
         this.appContext = appContext;
         this.dispatcher = dispatcher;
         this.aiExecutor = aiExecutor;
         this.banner = banner;
+        this.modelSettings = modelSettings;
+        this.installedModels = installedModels;
     }
 
     void show() {
@@ -171,11 +223,9 @@ final class MainWindow {
         Panel mainRow = new Panel(linear(Direction.HORIZONTAL, 1));
         mainRow.setLayoutData(grow());
         mainRow.addComponent(left);
-        if (SHOW_SIDE_PANEL) {
-            mainRow.addComponent(buildSidePanel());
-        }
+        mainRow.addComponent(buildModelPanel());
 
-        // --- alt satır: mod bilgisi / loading ve step
+        // --- alt satır: mod bilgisi / loading ve step / aktif model
         modeLabel.setForegroundColor(OctopusTheme.MAUVE);
         Border modeBox = modeLabel.withBorder(Borders.singleLine(" Mod "));
 
@@ -187,24 +237,27 @@ final class MainWindow {
         Border stepBox = stepRow.withBorder(Borders.singleLine(" Durum "));
         stepBox.setLayoutData(grow());
 
+        activeModelLabel.setForegroundColor(OctopusTheme.TEAL);
+        Border activeModelBox = activeModelLabel.withBorder(Borders.singleLine(" Aktif Model "));
+
         Panel statusRow = new Panel(linear(Direction.HORIZONTAL, 1));
         statusRow.setLayoutData(fill());
         statusRow.addComponent(modeBox);
         statusRow.addComponent(stepBox);
-        if (SHOW_SIDE_PANEL) {
-            // sağ panelin altını boş bırakır, kutular sol sütunla hizalı kalır
-            statusRow.addComponent(new EmptySpace(new TerminalSize(SIDE_PANEL_WIDTH, 1)));
-        }
+        statusRow.addComponent(activeModelBox);
 
-        Label keysLabel = new Label(KEYS);
-        keysLabel.setForegroundColor(OctopusTheme.MUTED);
+        Label keysLine1 = new Label(KEYS_1);
+        keysLine1.setForegroundColor(OctopusTheme.MUTED);
+        Label keysLine2 = new Label(KEYS_2);
+        keysLine2.setForegroundColor(OctopusTheme.MUTED);
 
         // --- uygulama çerçevesi
         Panel content = new Panel(linear(Direction.VERTICAL, 0));
         content.addComponent(mainRow);
         content.addComponent(statusRow);
-        content.addComponent(keysLabel);
-        Border frame = content.withBorder(Borders.doubleLine());
+        content.addComponent(keysLine1);
+        content.addComponent(keysLine2);
+        Border frame = content.withBorder(Borders.doubleLine(" Blue Ring Octopus CLI "));
 
         window.setHints(List.of(Window.Hint.FULL_SCREEN, Window.Hint.NO_DECORATIONS, Window.Hint.NO_POST_RENDERING));
         window.setComponent(frame);
@@ -218,20 +271,30 @@ final class MainWindow {
 
         applyBanner(gui.getScreen().getTerminalSize());
         refreshMode();
+        refreshInstalledAsync();
         setStatus(" Hazır", OctopusTheme.GREEN);
         appendOutput("Hoş geldin. Tab ile mod değiştir, prompt'u yazıp Enter'a bas.");
     }
 
-    private Border buildSidePanel() {
-        int width = SIDE_PANEL_WIDTH - 2;
-        StringBuilder text = new StringBuilder();
-        for (String line : List.of("", " Pop-up ve seçenek", " paneli için ayrıldı.", "",
-                " İhtiyaç doğduğunda", " tasarlanacak.")) {
-            text.append(String.format("%-" + width + "s", line)).append('\n');
-        }
-        Label content = new Label(text.toString().stripTrailing());
-        content.setForegroundColor(OctopusTheme.MUTED);
-        Border box = content.withBorder(Borders.singleLine(" Panel "));
+    private Border buildModelPanel() {
+        modelModeLabel.setForegroundColor(OctopusTheme.MAUVE);
+        modelHintLabel.setForegroundColor(OctopusTheme.MUTED);
+        modelList.setLayoutData(grow());
+
+        Separator separator = new Separator(Direction.HORIZONTAL);
+        separator.setLayoutData(fill());
+
+        Label legend = new Label(fit(" ● seçili  + kurulu  - yok", SIDE_INNER));
+        legend.setForegroundColor(OctopusTheme.MUTED);
+
+        Panel content = new Panel(linear(Direction.VERTICAL, 0));
+        content.addComponent(modelModeLabel);
+        content.addComponent(modelList);
+        content.addComponent(separator);
+        content.addComponent(legend);
+        content.addComponent(modelHintLabel);
+
+        Border box = content.withBorder(Borders.singleLine(" Model "));
         box.setLayoutData(fill());
         return box;
     }
@@ -248,7 +311,7 @@ final class MainWindow {
     }
 
     private void applyBanner(TerminalSize size) {
-        int available = size.getColumns() - 2 - 2 - (SHOW_SIDE_PANEL ? SIDE_PANEL_WIDTH + 1 : 0);
+        int available = size.getColumns() - 2 - 2 - (SIDE_PANEL_WIDTH + 1);
         List<String> lines = banner.choose(available, size.getRows());
         if (lines.equals(shownBanner)) {
             return;
@@ -278,7 +341,39 @@ final class MainWindow {
 
     // ---------------------------------------------------------------- input
 
+    private static boolean ctrl(KeyStroke key, char letter) {
+        Character c = key.getCharacter();
+        // AltGr, Ctrl+Alt olarak gelebilir; yalnızca salt Ctrl kısayol sayılır
+        return key.getKeyType() == KeyType.Character && c != null
+                && key.isCtrlDown() && !key.isAltDown()
+                && Character.toLowerCase(c) == letter;
+    }
+
     private void handleKey(KeyStroke key, AtomicBoolean deliverEvent) {
+        if (focusedOnModels() && handleModelKey(key, deliverEvent)) {
+            return;
+        }
+
+        if (key.getKeyType() == KeyType.Character) {
+            if (ctrl(key, 'c')) {
+                deliverEvent.set(false);
+                onEscapeOrInterrupt();
+            } else if (ctrl(key, 'p')) {
+                deliverEvent.set(false);
+                toggleFocus();
+            } else if (ctrl(key, 'l')) {
+                deliverEvent.set(false);
+                openModelPanel();
+            } else if (ctrl(key, 'v')) {
+                deliverEvent.set(false);
+                paste();
+            } else if (ctrl(key, 'o')) {
+                deliverEvent.set(false);
+                copyLastOutput();
+            }
+            return; // normal karakterler olduğu gibi iletilir
+        }
+
         switch (key.getKeyType()) {
             case Enter -> {
                 boolean newline = key.isShiftDown() || key.isAltDown();
@@ -314,35 +409,62 @@ final class MainWindow {
                 deliverEvent.set(false);
                 transcript.handleInput(key); // giriş alanı odaktayken çıktıyı kaydır
             }
+            case Insert -> {
+                if (key.isShiftDown()) {
+                    deliverEvent.set(false);
+                    paste();
+                }
+            }
             case Escape -> {
                 deliverEvent.set(false);
-                requestExit();
+                onEscapeOrInterrupt();
             }
             case EOF -> { // terminal yok oldu, soru sorulamaz
                 deliverEvent.set(false);
-                window.close();
-            }
-            case Character -> {
-                Character c = key.getCharacter();
-                // AltGr, Ctrl+Alt olarak gelebilir; yalnızca salt Ctrl kısayol sayılır
-                if (c != null && key.isCtrlDown() && !key.isAltDown()) {
-                    char lower = Character.toLowerCase(c);
-                    if (lower == 'c') {
-                        deliverEvent.set(false);
-                        requestExit();
-                    } else if (lower == 'p') {
-                        deliverEvent.set(false);
-                        toggleFocus();
-                    }
-                }
+                closeApplication();
             }
             default -> {
             }
         }
     }
 
+    /**
+     * Model paneli odaktayken tuşları ben yönetirim, liste bileşenine hiçbir tuş gitmez.
+     * true dönerse tuş tüketilmiştir.
+     */
+    private boolean handleModelKey(KeyStroke key, AtomicBoolean deliverEvent) {
+        switch (key.getKeyType()) {
+            case Tab, ReverseTab, EOF -> {
+                return false; // mod değiştirme ve çıkış normal akışta
+            }
+            case Character -> {
+                if (ctrl(key, 'l')) {
+                    closeModelPanel();
+                } else if (ctrl(key, 'c') || ctrl(key, 'p') || ctrl(key, 'o')) {
+                    return false;
+                }
+            }
+            case ArrowUp -> moveModelCursor(-1);
+            case ArrowDown -> moveModelCursor(1);
+            case Enter -> chooseSelectedModel();
+            case Escape -> closeModelPanel();
+            default -> {
+            }
+        }
+        deliverEvent.set(false);
+        return true;
+    }
+
     private boolean focusedOnPrompt() {
         return window.getFocusedInteractable() == promptInput;
+    }
+
+    private boolean focusedOnPath() {
+        return window.getFocusedInteractable() == pathInput;
+    }
+
+    private boolean focusedOnModels() {
+        return window.getFocusedInteractable() == modelList;
     }
 
     private void toggleFocus() {
@@ -354,7 +476,7 @@ final class MainWindow {
      * ↑ (older=true) ve ↓ (older=false): önce satırlar arası gezinir, uçlarda geçmişi getirir.
      */
     private void recall(boolean older) {
-        if (!focusedOnPrompt()) {
+        if (focusedOnPath()) {
             String value = older ? pathHistory.previous(pathInput.getText()) : pathHistory.next();
             if (value != null) {
                 pathInput.setText(value);
@@ -381,40 +503,268 @@ final class MainWindow {
     private void refreshMode() {
         AppMode mode = appContext.getCurrentMode();
         modeLabel.setText(String.format("%-" + MODE_TEXT_WIDTH + "s", "‹ " + mode.getDisplayName() + " ›"));
+        refreshModelPanel(true);
         refreshHint();
     }
 
     private void refreshHint() {
         AppMode mode = appContext.getCurrentMode();
-        hintLabel.setText(focusedOnPrompt()
-                ? " Prompt: " + mode.getPromptHint()
-                : " Path: " + mode.getPathHint());
+        if (focusedOnModels()) {
+            hintLabel.setText(" Model seçimi (" + mode.getDisplayName() + "): ↑↓ gez · Enter seç · Esc geri");
+        } else {
+            hintLabel.setText(focusedOnPath()
+                    ? " Path: " + mode.getPathHint()
+                    : " Prompt: " + mode.getPromptHint());
+        }
+        refreshModelHint();
     }
 
-    // ---------------------------------------------------------------- exit
+    // ---------------------------------------------------------------- clipboard
+
+    private void paste() {
+        if (!focusedOnPrompt() && !focusedOnPath()) {
+            return;
+        }
+        Optional<String> clip = ClipboardSupport.read();
+        if (clip.isEmpty() || clip.get().isBlank()) {
+            notice(" Panoda yapıştırılacak metin yok.", OctopusTheme.YELLOW);
+            return;
+        }
+        if (focusedOnPrompt()) {
+            promptInput.insertText(clip.get());
+        } else {
+            pasteIntoPath(clip.get());
+        }
+    }
+
+    /**
+     * Path tek satırdır: ilk dolu satır alınır, çevreleyen tırnaklar (Windows "Yol olarak kopyala") temizlenir.
+     */
+    private void pasteIntoPath(String raw) {
+        List<String> lines = raw.lines().map(String::strip).filter(line -> !line.isEmpty()).toList();
+        String value = PathUtils.clean(lines.isEmpty() ? "" : lines.getFirst());
+        if (value.isEmpty()) {
+            return;
+        }
+        String current = pathInput.getText();
+        int column = Math.max(0, Math.min(pathInput.getCaretPosition().getColumn(), current.length()));
+        pathInput.setText(current.substring(0, column) + value + current.substring(column));
+        pathInput.setCaretPosition(0, column + value.length());
+        if (lines.size() > 1) {
+            notice(" Path tek satırdır, panodaki ilk satır alındı.", OctopusTheme.YELLOW);
+        }
+    }
+
+    private void copyLastOutput() {
+        String text = lastOutput.toString().strip();
+        if (text.isEmpty()) {
+            notice(" Kopyalanacak çıktı yok.", OctopusTheme.YELLOW);
+            return;
+        }
+        if (ClipboardSupport.write(text)) {
+            notice(" Son çıktı panoya kopyalandı (" + text.length() + " karakter).", OctopusTheme.GREEN);
+        } else {
+            notice(" Panoya erişilemedi.", OctopusTheme.YELLOW);
+        }
+    }
+
+    // ---------------------------------------------------------------- models
+
+    private void openModelPanel() {
+        refreshInstalledAsync();
+        refreshModelPanel(true);
+        window.setFocusedInteractable(modelList);
+        refreshHint();
+    }
+
+    private void closeModelPanel() {
+        window.setFocusedInteractable(promptInput);
+        refreshHint();
+    }
+
+    private void moveModelCursor(int delta) {
+        int count = modelList.getItemCount();
+        if (count == 0) {
+            return;
+        }
+        modelList.setSelectedIndex(Math.max(0, Math.min(count - 1, modelList.getSelectedIndex() + delta)));
+    }
+
+    private void chooseSelectedModel() {
+        int index = modelList.getSelectedIndex();
+        if (index < 0 || index >= modelRows.size()) {
+            return;
+        }
+        String name = modelRows.get(index);
+        AppMode mode = appContext.getCurrentMode();
+        if (installedModels.isKnown() && !installedModels.isInstalled(name)) {
+            notice(" Kurulu değil. Terminalde çalıştır: ollama pull " + name, OctopusTheme.YELLOW);
+            return;
+        }
+        modelSettings.select(mode, name);
+        refreshModelPanel(false);
+        closeModelPanel();
+        notice(" " + mode.getDisplayName() + " için model: " + name, OctopusTheme.GREEN);
+    }
+
+    /**
+     * Ollama'ya arka planda sorar, bitince paneli yeniler.
+     */
+    private void refreshInstalledAsync() {
+        aiExecutor.submit(() -> {
+            installedModels.refresh();
+            ui(() -> refreshModelPanel(false));
+        });
+    }
+
+    /**
+     * @param cursorToSelected true ise liste imleci aktif modun seçili modeline taşınır
+     */
+    private void refreshModelPanel(boolean cursorToSelected) {
+        AppMode mode = appContext.getCurrentMode();
+        String selected = modelSettings.modelFor(mode);
+        List<String> names = modelNames(selected);
+        int cursor = Math.max(0, modelList.getSelectedIndex());
+
+        modelRows = names;
+        modelList.clearItems();
+        for (String name : names) {
+            modelList.addItem(modelRow(name, sameModel(name, selected)), () -> {
+            });
+        }
+        if (cursorToSelected) {
+            for (int i = 0; i < names.size(); i++) {
+                if (sameModel(names.get(i), selected)) {
+                    cursor = i;
+                    break;
+                }
+            }
+        }
+        modelList.setSelectedIndex(Math.max(0, Math.min(cursor, names.size() - 1)));
+
+        modelModeLabel.setText(fit(" Mod: " + mode.getDisplayName(), SIDE_INNER));
+        refreshModelHint();
+        refreshActiveModel();
+    }
+
+    /**
+     * Katalog + Ollama'da kurulu olup katalogda olmayanlar + (gerekirse) aktif modelin kendisi.
+     */
+    private List<String> modelNames(String selected) {
+        List<String> names = new ArrayList<>(ModelCatalog.SUGGESTED);
+        for (String installed : installedModels.names()) {
+            String display = InstalledModels.display(installed);
+            if (names.stream().noneMatch(name -> sameModel(name, display))) {
+                names.add(display);
+            }
+        }
+        if (names.stream().noneMatch(name -> sameModel(name, selected))) {
+            names.addFirst(selected);
+        }
+        return names;
+    }
+
+    private String modelRow(String name, boolean selected) {
+        String state = !installedModels.isKnown() ? " " : installedModels.isInstalled(name) ? "+" : "-";
+        return (selected ? "●" : "○") + " " + fit(name, MODEL_NAME_COLS) + " " + state;
+    }
+
+    private void refreshModelHint() {
+        boolean unreachable = installedModels.isChecked() && !installedModels.isKnown();
+        String text;
+        if (!installedModels.isChecked()) {
+            text = " Ollama kontrol ediliyor...";
+        } else if (unreachable) {
+            text = " Ollama'ya ulaşılamadı";
+        } else {
+            text = focusedOnModels() ? " Enter: seç · Esc: geri" : " Ctrl+L: model değiştir";
+        }
+        modelHintLabel.setText(fit(text, SIDE_INNER));
+        modelHintLabel.setForegroundColor(unreachable ? OctopusTheme.YELLOW : OctopusTheme.MUTED);
+    }
+
+    private void refreshActiveModel() {
+        String model = modelSettings.modelFor(appContext.getCurrentMode());
+        boolean missing = installedModels.isKnown() && !installedModels.isInstalled(model);
+        activeModelLabel.setText(fit(missing ? model + " (yok)" : model, SIDE_INNER));
+        activeModelLabel.setForegroundColor(missing ? OctopusTheme.YELLOW : OctopusTheme.TEAL);
+    }
+
+    private static boolean sameModel(String a, String b) {
+        return InstalledModels.normalize(a).equals(InstalledModels.normalize(b));
+    }
+
+    // ---------------------------------------------------------------- exit / interrupt
+
+    /**
+     * Çalışan bir işlem varsa Esc yalnızca onu iptal etmeyi önerir, uygulamadan çıkmaz.
+     */
+    private void onEscapeOrInterrupt() {
+        if (busy.get()) {
+            confirmInterrupt();
+        } else {
+            confirmExit();
+        }
+    }
+
+    private void confirmInterrupt() {
+        Job job = activeJob;
+        if (job == null || !dialogOpen.compareAndSet(false, true)) {
+            return;
+        }
+        try {
+            boolean yes = askYesNo("İşlemi iptal et",
+                    "Çalışan işlem iptal edilsin mi?\nSadece bu işlem durur, uygulama açık kalır.");
+            if (yes) {
+                interruptJob(job);
+            }
+        } finally {
+            dialogOpen.set(false);
+        }
+    }
+
+    /**
+     * Diyalog açıkken iş kendiliğinden bitmiş olabilir, bu yüzden işlemin hâlâ aktif olduğunu kontrol eder.
+     */
+    private void interruptJob(Job job) {
+        if (activeJob != job) {
+            return;
+        }
+        job.cancel();
+        appendOutput("\n■ İşlem iptal edildi.");
+        finishTask(job);
+    }
 
     private void confirmExit() {
-        if (!confirmingExit.compareAndSet(false, true)) {
-            return; // onay kutusu zaten açık
+        if (!dialogOpen.compareAndSet(false, true)) {
+            return; // başka bir onay kutusu zaten açık
         }
         try {
             String message = busy.get()
-                    ? "Devam eden bir işlem var, çıkarsanız yarıda kesilir.\nUygulamadan çıkmak istiyor musunuz?"
+                    ? "Devam eden bir işlem var, çıkarsanız iptal edilir.\nUygulamadan çıkmak istiyor musunuz?"
                     : "Uygulamadan çıkmak istiyor musunuz?";
-            if (askYesNo(message)) {
-                window.close();
+            if (askYesNo("Çıkış", message)) {
+                closeApplication();
             }
         } finally {
-            confirmingExit.set(false);
+            dialogOpen.set(false);
         }
+    }
+
+    private void closeApplication() {
+        Job job = activeJob;
+        if (job != null) {
+            job.cancel();
+        }
+        window.close();
     }
 
     /**
      * Varsayılan odak "Hayır"da. E/Y evet, H/N hayır, Esc iptal.
      */
-    private boolean askYesNo(String message) {
+    private boolean askYesNo(String title, String message) {
         AtomicBoolean yes = new AtomicBoolean(false);
-        BasicWindow dialog = new BasicWindow("Çıkış");
+        BasicWindow dialog = new BasicWindow(title);
         dialog.setHints(List.of(Window.Hint.CENTERED, Window.Hint.MODAL));
 
         Label label = new Label(message);
@@ -472,15 +822,15 @@ final class MainWindow {
         String path = pathInput.getText().strip();
 
         if ("exit".equalsIgnoreCase(prompt) || "cikis".equalsIgnoreCase(prompt)) {
-            window.close();
+            closeApplication();
             return;
         }
         if (prompt.isEmpty() && mode != AppMode.KOD_ANALIZI) {
-            setStatus(" Önce prompt alanına bir istek yazın.", OctopusTheme.YELLOW);
+            notice(" Önce prompt alanına bir istek yazın.", OctopusTheme.YELLOW);
             return;
         }
         if (!busy.compareAndSet(false, true)) {
-            setStatus(" Önceki işlem sürüyor, lütfen bekleyin...", OctopusTheme.YELLOW);
+            notice(" Önceki işlem sürüyor. İptal etmek için Esc.", OctopusTheme.YELLOW);
             return;
         }
 
@@ -490,15 +840,19 @@ final class MainWindow {
         if (mode == AppMode.KOD_GENERATE) {
             pathInput.setText(""); // aynı dosyaya ikinci kez yazma hatasını önler
         }
-        appendOutput("\n» [" + mode.getDisplayName() + "] " + describe(mode, prompt, path));
+        lastOutput.setLength(0);
+        appendOutput("\n» [" + mode.getDisplayName() + " · " + modelSettings.modelFor(mode) + "] "
+                + describe(mode, prompt, path));
 
         currentStep = "Başlatılıyor...";
         progressDone = 0;
         progressTotal = 0;
+        Job job = new Job();
+        activeJob = job;
         startSpinner();
 
         ModeRequest request = new ModeRequest(prompt, path);
-        aiExecutor.submit(() -> run(mode, request));
+        job.future = aiExecutor.submit(() -> run(job, mode, request));
     }
 
     private static String describe(AppMode mode, String prompt, String path) {
@@ -509,15 +863,17 @@ final class MainWindow {
         };
     }
 
-    private void run(AppMode mode, ModeRequest request) {
+    private void run(Job job, AppMode mode, ModeRequest request) {
         try {
-            dispatcher.dispatch(mode, request, console);
+            dispatcher.dispatch(mode, request, job);
         } catch (Exception e) {
-            log.error("Mod çalıştırılırken hata: {}", mode, e);
-            String message = e.getMessage() != null ? e.getMessage() : e.getClass().getSimpleName();
-            ui(() -> appendOutput("Hata: " + message));
+            if (!job.isCancelled()) { // iptalin yol açtığı istisnalar kullanıcıya hata olarak gösterilmez
+                log.error("Mod çalıştırılırken hata: {}", mode, e);
+                String message = e.getMessage() != null ? e.getMessage() : e.getClass().getSimpleName();
+                ui(() -> appendOutput("Hata: " + message));
+            }
         } finally {
-            ui(this::finishTask);
+            ui(() -> finishTask(job));
         }
     }
 
@@ -530,16 +886,26 @@ final class MainWindow {
                 if (!busy.get()) {
                     return; // işlem bittikten sonra gecikmiş bir tik "Hazır"ı ezmesin
                 }
-                setStatus(step, OctopusTheme.TEXT);
+                if (System.currentTimeMillis() >= noticeUntil) {
+                    setStatus(step, OctopusTheme.TEXT);
+                }
                 progressLabel.setText(bar);
             });
         }, 0, 120, TimeUnit.MILLISECONDS);
     }
 
-    private void finishTask() {
+    /**
+     * İptal edilmiş eski bir işlemin gecikmiş bitişi, yeni işlemin durumunu bozmasın diye kontrol edilir.
+     */
+    private void finishTask(Job job) {
+        if (activeJob != job) {
+            return;
+        }
+        activeJob = null;
         if (spinnerTask != null) {
             spinnerTask.cancel(false);
         }
+        noticeUntil = 0;
         setStatus(" Hazır", OctopusTheme.GREEN);
         progressLabel.setText(BLANK_PROGRESS);
         busy.set(false);
@@ -550,6 +916,14 @@ final class MainWindow {
     private void setStatus(String text, TextColor color) {
         stepLabel.setText(text);
         stepLabel.setForegroundColor(color);
+    }
+
+    /**
+     * Geçici bildirim: spinner birkaç saniye üzerine yazmaz.
+     */
+    private void notice(String text, TextColor color) {
+        noticeUntil = System.currentTimeMillis() + NOTICE_MILLIS;
+        setStatus(text, color);
     }
 
     private static String progressText(int done, int total) {
@@ -571,7 +945,7 @@ final class MainWindow {
 
         int columns = gui.getScreen().getTerminalSize().getColumns();
         // çerçeve(2) + kutu(2) + kaydırma çubuğu(1) + pay(1) + sağ panel
-        int width = Math.max(20, columns - 6 - (SHOW_SIDE_PANEL ? SIDE_PANEL_WIDTH + 1 : 0));
+        int width = Math.max(20, columns - 6 - (SIDE_PANEL_WIDTH + 1));
         for (String line : text.replace("\t", "    ").split("\\R", -1)) {
             for (String part : wrap(line, width)) {
                 transcript.addLine(part);
@@ -602,6 +976,14 @@ final class MainWindow {
         }
         parts.add(rest);
         return parts;
+    }
+
+    /**
+     * Sabit genişliğe boşlukla doldurur, uzunsa "…" ile keser.
+     */
+    private static String fit(String text, int width) {
+        String value = text.length() > width ? text.substring(0, width - 1) + "…" : text;
+        return String.format("%-" + width + "s", value);
     }
 
     private static String shorten(String text) {

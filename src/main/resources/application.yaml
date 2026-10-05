@@ -1,3 +1,6 @@
+octopus:
+  version: "@project.version@"
+
 spring:
   application:
     name: code-analyzer

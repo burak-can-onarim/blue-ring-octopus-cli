@@ -10,7 +10,7 @@
     </parent>
     <groupId>com.bcoworks</groupId>
     <artifactId>code-analyzer</artifactId>
-    <version>0.1.0-SNAPSHOT</version>
+    <version>0.1.2-SNAPSHOT</version>
     <name/>
     <description/>
     <url/>
@@ -72,6 +72,7 @@
     </dependencies>
 
     <build>
+        <finalName>code-analyzer</finalName>
         <plugins>
             <plugin>
                 <groupId>org.springframework.boot</groupId>
