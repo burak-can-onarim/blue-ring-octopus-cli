@@ -6,7 +6,7 @@ color 0A
 cls
 
 echo =========================================
-echo      CODE ANALYZER AI - BASLATICI
+echo      BLUE RING OCTOPUS CLI - BASLATICI
 echo =========================================
 echo.
 echo Kullanilabilir Yerel Modeller:
@@ -30,4 +30,4 @@ echo %AI_MODEL_NAME% modeli ile ajan baslatiliyor, lutfen bekleyin...
 echo =========================================
 
 :: Ortam değişkenini Spring Boot'a aktararak jar'ı interaktif modda başlatıyoruz
-start "" javaw -Dfile.encoding=UTF-8 --enable-native-access=ALL-UNNAMED -jar target\code-analyzer.jar ui
+start "" javaw -Dfile.encoding=UTF-8 --enable-native-access=ALL-UNNAMED -jar target\blue-ring-octopus-cli.jar ui

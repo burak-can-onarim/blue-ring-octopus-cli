@@ -3,7 +3,7 @@ octopus:
 
 spring:
   application:
-    name: code-analyzer
+    name: blue-ring-octopus-cli
   shell:
     interactive:
       enabled: false

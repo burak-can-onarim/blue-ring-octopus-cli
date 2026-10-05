@@ -1,5 +1,5 @@
 FROM ubuntu:latest
-LABEL authors="bco"
+LABEL authors="bcoworks"
 
 # 1. Aşama: Derleme (Build) Aşaması
 FROM eclipse-temurin:25-jdk AS build
@@ -10,7 +10,7 @@ RUN ./mvnw clean package -DskipTests
 # 2. Aşama: Çalıştırma (Runtime) Aşaması
 FROM eclipse-temurin:25-jre
 WORKDIR /app
-COPY --from=build /app/target/code-analyzer.jar app.jar
+COPY --from=build /app/target/blue-ring-octopus-cli.jar app.jar
 
 # Etkileşimli terminal (Tty) ve konsol için giriş komutu
 ENTRYPOINT ["java", "-jar", "app.jar"]
