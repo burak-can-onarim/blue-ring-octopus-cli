@@ -9,10 +9,10 @@
         <relativePath/> <!-- lookup parent from repository -->
     </parent>
     <groupId>com.bcoworks</groupId>
-    <artifactId>code-analyzer</artifactId>
+    <artifactId>blue-ring-octopus-cli</artifactId>
     <version>0.1.2-SNAPSHOT</version>
-    <name/>
-    <description/>
+    <name>Blue Ring Octopus CLI</name>
+    <description>Local AI code analysis terminal application (Ollama + LangChain4j)</description>
     <url/>
     <licenses>
         <license/>
@@ -72,7 +72,7 @@
     </dependencies>
 
     <build>
-        <finalName>code-analyzer</finalName>
+        <finalName>blue-ring-octopus-cli</finalName>
         <plugins>
             <plugin>
                 <groupId>org.springframework.boot</groupId>
