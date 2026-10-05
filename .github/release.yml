@@ -1,0 +1,29 @@
+# Configures the automatically generated release notes (gh release create --generate-notes).
+changelog:
+  exclude:
+    labels:
+      - skip-changelog
+  categories:
+    - title: "⚠️ Breaking changes"
+      labels:
+        - breaking
+    - title: "✨ New features"
+      labels:
+        - enhancement
+    - title: "🐛 Bug fixes"
+      labels:
+        - bug
+    - title: "📚 Documentation"
+      labels:
+        - documentation
+    - title: "🧪 Tests"
+      labels:
+        - tests
+    - title: "🔧 Build, CI and dependencies"
+      labels:
+        - ci
+        - docker
+        - dependencies
+    - title: "♻️ Other changes"
+      labels:
+        - "*"
