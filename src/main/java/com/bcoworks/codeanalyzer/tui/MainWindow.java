@@ -598,7 +598,9 @@ final class MainWindow {
         String name = modelRows.get(index);
         AppMode mode = appContext.getCurrentMode();
         if (installedModels.isKnown() && !installedModels.isInstalled(name)) {
-            notice(" Kurulu değil. Terminalde çalıştır: ollama pull " + name, OctopusTheme.YELLOW);
+            // Durum kutusu dar; uzun model adlarında komut kesilir, bu yüzden tam komut çıktıya da yazılır.
+            notice(" Kurulu değil, komut çıktıda", OctopusTheme.YELLOW);
+            appendOutput("Model kurulu değil. Terminalde çalıştır: ollama pull " + name);
             return;
         }
         modelSettings.select(mode, name);
