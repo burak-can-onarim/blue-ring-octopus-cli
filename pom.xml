@@ -12,20 +12,37 @@
     <artifactId>blue-ring-octopus-cli</artifactId>
     <version>0.1.2-SNAPSHOT</version>
     <name>Blue Ring Octopus CLI</name>
-    <description>Local AI code analysis terminal application (Ollama + LangChain4j)</description>
-    <url/>
+    <description>Local-first AI code analysis and generation in your terminal (Ollama + LangChain4j)</description>
+    <url>https://github.com/burak-can-onarim/blue-ring-octopus-cli</url>
+    <inceptionYear>2026</inceptionYear>
     <licenses>
-        <license/>
+        <license>
+            <name>MIT License</name>
+            <url>https://opensource.org/license/mit</url>
+            <distribution>repo</distribution>
+        </license>
     </licenses>
     <developers>
-        <developer/>
+        <developer>
+            <id>burak-can-onarim</id>
+            <name>Burak Can Onarım</name>
+            <url>https://github.com/burak-can-onarim</url>
+        </developer>
     </developers>
     <scm>
-        <connection/>
-        <developerConnection/>
-        <tag/>
-        <url/>
+        <connection>scm:git:https://github.com/burak-can-onarim/blue-ring-octopus-cli.git</connection>
+        <developerConnection>scm:git:ssh://git@github.com/burak-can-onarim/blue-ring-octopus-cli.git</developerConnection>
+        <tag>HEAD</tag>
+        <url>https://github.com/burak-can-onarim/blue-ring-octopus-cli</url>
     </scm>
+    <issueManagement>
+        <system>GitHub Issues</system>
+        <url>https://github.com/burak-can-onarim/blue-ring-octopus-cli/issues</url>
+    </issueManagement>
+    <ciManagement>
+        <system>GitHub Actions</system>
+        <url>https://github.com/burak-can-onarim/blue-ring-octopus-cli/actions</url>
+    </ciManagement>
     <properties>
         <java.version>25</java.version>
     </properties>

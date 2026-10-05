@@ -1,0 +1,15 @@
+# Build context hygiene: keep the image build fast and free of local state.
+.git
+.github
+.idea
+.vscode
+.claude
+target
+logs
+docs
+generated
+*.log
+*.jar
+*.zip
+*.exe
+**/.DS_Store
