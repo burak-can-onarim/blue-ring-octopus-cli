@@ -2,6 +2,7 @@ package com.bcoworks.blueringoctopuscli.model;
 
 import com.bcoworks.blueringoctopuscli.context.AppMode;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -21,13 +22,19 @@ public class ModelSettings {
 
     private final Map<AppMode, String> selected = new ConcurrentHashMap<>();
     private final String defaultModel;
-    private final Path file = Path.of(System.getProperty("user.home"), ".octopus-cli", "models.properties");
+    private final Path file;
 
     /**
      * Varsayılan: application.yaml (AI_MODEL_NAME ortam değişkeni). Kayıtlı seçim varsa o önceliklidir.
      */
+    @Autowired
     public ModelSettings(@Value("${langchain4j.ollama.chat-model.model-name:qwen2.5-coder}") String defaultModel) {
+        this(defaultModel, Path.of(System.getProperty("user.home"), ".octopus-cli", "models.properties"));
+    }
+
+    ModelSettings(String defaultModel, Path file) {
         this.defaultModel = defaultModel;
+        this.file = file;
         load();
     }
 

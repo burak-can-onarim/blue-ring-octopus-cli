@@ -1,0 +1,97 @@
+name: Bug report
+description: Something does not work as expected
+title: "[Bug]: "
+labels: ["bug"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for taking the time to report a problem. Please check the
+        [usage guide](https://github.com/burak-can-onarim/blue-ring-octopus-cli/blob/master/docs/USAGE.md#troubleshooting)
+        and the existing issues first.
+
+        **Security problem?** Do not file it here; use
+        [private vulnerability reporting](https://github.com/burak-can-onarim/blue-ring-octopus-cli/security/advisories/new).
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: What did you do, what did you expect, and what happened instead?
+      placeholder: "I switched to Kod Generate, typed a prompt, pressed Enter and ..."
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      value: |
+        1.
+        2.
+        3.
+    validations:
+      required: true
+  - type: dropdown
+    id: mode
+    attributes:
+      label: Where did it happen?
+      options:
+        - Full-screen UI - Kod Analizi
+        - Full-screen UI - Kod Generate
+        - Full-screen UI - model panel or other
+        - One-shot command (analyze)
+        - One-shot command (generate)
+        - Docker image
+        - Start-up / installation
+        - Other
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Application version
+      description: Shown in the banner, or the release / image tag you used.
+      placeholder: "0.1.2"
+    validations:
+      required: true
+  - type: input
+    id: model
+    attributes:
+      label: Ollama model
+      placeholder: "qwen2.5-coder:14b"
+  - type: input
+    id: ollama-version
+    attributes:
+      label: Ollama version
+      description: Output of `ollama --version`.
+  - type: input
+    id: java-version
+    attributes:
+      label: Java version
+      description: First line of `java -version`.
+      placeholder: "openjdk version \"25\" ..."
+  - type: dropdown
+    id: os
+    attributes:
+      label: Operating system
+      options:
+        - Windows
+        - Linux
+        - macOS
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs and screenshots
+      description: Relevant lines from `logs/octopus.log`, error text, or a screenshot. Remove anything private such as source code you cannot share.
+      render: shell
+  - type: checkboxes
+    id: checks
+    attributes:
+      label: Checklist
+      options:
+        - label: I searched the existing issues and did not find a duplicate.
+          required: true
+        - label: This is not a security vulnerability (those go through private reporting).
+          required: true

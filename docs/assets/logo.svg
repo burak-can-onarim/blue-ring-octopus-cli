@@ -1,0 +1,54 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 256 256" width="256" height="256" role="img" aria-labelledby="t d">
+  <title id="t">Blue Ring Octopus CLI logo</title>
+  <desc id="d">A stylised octopus with glowing blue rings on its mantle, on a dark rounded tile.</desc>
+  <defs>
+    <linearGradient id="body" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#cba6f7"/>
+      <stop offset="1" stop-color="#89b4fa"/>
+    </linearGradient>
+    <linearGradient id="arms" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#89b4fa"/>
+      <stop offset="1" stop-color="#94e2d5"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="0.5" cy="0.38" r="0.6">
+      <stop offset="0" stop-color="#89b4fa" stop-opacity="0.28"/>
+      <stop offset="1" stop-color="#89b4fa" stop-opacity="0"/>
+    </radialGradient>
+  </defs>
+
+  <rect width="256" height="256" rx="56" fill="#1e1e2e"/>
+  <rect width="256" height="256" rx="56" fill="url(#glow)"/>
+
+  <!-- arms -->
+  <g fill="none" stroke="url(#arms)" stroke-width="13" stroke-linecap="round" stroke-linejoin="round">
+    <path d="M90 142 C74 166 50 166 42 192 C38 207 54 216 62 206"/>
+    <path d="M106 148 C98 176 84 190 86 216 C87 228 100 230 104 220"/>
+    <path d="M128 150 C120 176 138 196 128 222"/>
+    <path d="M150 148 C158 176 172 190 170 216 C169 228 156 230 152 220"/>
+    <path d="M166 142 C182 166 206 166 214 192 C218 207 202 216 194 206"/>
+  </g>
+
+  <!-- mantle -->
+  <path d="M62 122 C62 60 92 30 128 30 C164 30 194 60 194 122 C194 138 182 148 166 148 L90 148 C74 148 62 138 62 122 Z"
+        fill="url(#body)"/>
+
+  <!-- the blue rings -->
+  <g fill="#1e1e2e" stroke="#94e2d5" stroke-width="4">
+    <circle cx="104" cy="62" r="12"/>
+    <circle cx="152" cy="62" r="12"/>
+    <circle cx="128" cy="92" r="12"/>
+  </g>
+  <g fill="#94e2d5">
+    <circle cx="104" cy="62" r="4.4"/>
+    <circle cx="152" cy="62" r="4.4"/>
+    <circle cx="128" cy="92" r="4.4"/>
+  </g>
+
+  <!-- eyes -->
+  <g>
+    <circle cx="100" cy="126" r="12" fill="#1e1e2e"/>
+    <circle cx="156" cy="126" r="12" fill="#1e1e2e"/>
+    <circle cx="103" cy="123" r="4.2" fill="#cdd6f4"/>
+    <circle cx="159" cy="123" r="4.2" fill="#cdd6f4"/>
+  </g>
+</svg>
