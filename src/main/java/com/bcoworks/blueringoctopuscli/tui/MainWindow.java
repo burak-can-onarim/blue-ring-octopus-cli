@@ -69,7 +69,7 @@ final class MainWindow implements MouseSupport.Handler {
 
     private final BasicWindow window = new BasicWindow("Blue Ring Octopus CLI");
     private final Panel bannerPanel = new Panel(linear(Direction.VERTICAL, 0));
-    private final TextBox transcript = new TextBox(new TerminalSize(40, 6), TextBox.Style.MULTI_LINE).setReadOnly(true);
+    private final DialogView dialog = new DialogView();
     private final PromptArea promptInput = new PromptArea();
     private final TextBox pathInput = new TextBox(new TerminalSize(40, 1));
     private final Label hintLabel = new Label("");
@@ -124,7 +124,7 @@ final class MainWindow implements MouseSupport.Handler {
             }
             ui(() -> {
                 if (!cancelled) {
-                    appendOutput(text);
+                    dialog.addAnswer(text);
                     lastOutput.append(text).append('\n');
                 }
             });
@@ -211,8 +211,8 @@ final class MainWindow implements MouseSupport.Handler {
             if (dialogOpen.get()) {
                 return;
             }
-            if (isOver(transcript, column, row)) {
-                scrollTranscript(lines);
+            if (isOver(dialog, column, row)) {
+                dialog.scroll(lines);
             } else if (isOver(promptInput, column, row)) {
                 promptInput.scroll(lines);
             }
@@ -240,16 +240,6 @@ final class MainWindow implements MouseSupport.Handler {
     }
 
     /**
-     * Salt okunur TextBox'ın görünümü imleçten bağımsızdır, PgUp/PgDn gibi doğrudan görünüm üst satırı ayarlanır
-     * (alt sınır çizimde TextBox tarafından düzeltilir).
-     */
-    private void scrollTranscript(int lines) {
-        TextBox.TextBoxRenderer renderer = transcript.getRenderer();
-        renderer.setViewTopLeft(renderer.getViewTopLeft().withRelativeRow(lines));
-        transcript.invalidate();
-    }
-
-    /**
      * Çıkış onayı ister. Herhangi bir thread'den çağrılabilir (örn. pencere X düğmesi).
      */
     void requestExit() {
@@ -259,7 +249,7 @@ final class MainWindow implements MouseSupport.Handler {
     // ---------------------------------------------------------------- layout
 
     private void build() {
-        // --- sol sütun: banner / prompt alanı / path alanı
+        // --- üst: banner (tam genişlik)
         Panel bannerHolder = new Panel(linear(Direction.VERTICAL, 0));
         bannerPanel.setLayoutData(LinearLayout.createLayoutData(LinearLayout.Alignment.Center));
         bannerHolder.addComponent(bannerPanel);
@@ -267,8 +257,8 @@ final class MainWindow implements MouseSupport.Handler {
         bannerBox.setLayoutData(fill());
 
         Panel promptContent = new Panel(linear(Direction.VERTICAL, 0));
-        transcript.setLayoutData(grow());
-        promptContent.addComponent(transcript);
+        dialog.setLayoutData(grow());
+        promptContent.addComponent(dialog);
 
         Separator separator = new Separator(Direction.HORIZONTAL);
         separator.setLayoutData(fill());
@@ -285,9 +275,9 @@ final class MainWindow implements MouseSupport.Handler {
                 .withBorder(Borders.singleLine(" Path · çalışma dizini: " + shorten(System.getProperty("user.dir")) + " "));
         pathBox.setLayoutData(fill());
 
+        // --- orta: solda diyalog + prompt + path, sağda model paneli (yalnızca bu satırın yüksekliği kadar)
         Panel left = new Panel(linear(Direction.VERTICAL, 0));
         left.setLayoutData(grow());
-        left.addComponent(bannerBox);
         left.addComponent(promptBox);
         left.addComponent(pathBox);
 
@@ -309,6 +299,7 @@ final class MainWindow implements MouseSupport.Handler {
         stepBox.setLayoutData(grow());
 
         activeModelLabel.setForegroundColor(OctopusTheme.TEAL);
+        activeModelLabel.setPreferredSize(new TerminalSize(SIDE_INNER, 1)); // model paneliyle aynı genişlik
         Border activeModelBox = activeModelLabel.withBorder(Borders.singleLine(" Aktif Model "));
 
         Panel statusRow = new Panel(linear(Direction.HORIZONTAL, 1));
@@ -324,6 +315,7 @@ final class MainWindow implements MouseSupport.Handler {
 
         // --- uygulama çerçevesi
         Panel content = new Panel(linear(Direction.VERTICAL, 0));
+        content.addComponent(bannerBox);
         content.addComponent(mainRow);
         content.addComponent(statusRow);
         content.addComponent(keysLine1);
@@ -344,7 +336,7 @@ final class MainWindow implements MouseSupport.Handler {
         refreshMode();
         refreshInstalledAsync();
         setStatus(" Hazır", OctopusTheme.GREEN);
-        appendOutput("Hoş geldin. Tab ile mod değiştir, prompt'u yazıp Enter'a bas.");
+        dialog.addNote("Hoş geldin. Tab ile mod değiştir, prompt'u yazıp Enter'a bas.");
     }
 
     private Border buildModelPanel() {
@@ -382,7 +374,7 @@ final class MainWindow implements MouseSupport.Handler {
     }
 
     private void applyBanner(TerminalSize size) {
-        int available = size.getColumns() - 2 - 2 - (SIDE_PANEL_WIDTH + 1);
+        int available = size.getColumns() - 2 - 2; // uygulama çerçevesi + banner kutusu
         List<String> lines = banner.choose(available, size.getRows());
         if (lines.equals(shownBanner)) {
             return;
@@ -473,9 +465,13 @@ final class MainWindow implements MouseSupport.Handler {
                 deliverEvent.set(false);
                 recall(false);
             }
-            case PageUp, PageDown -> {
+            case PageUp -> {
                 deliverEvent.set(false);
-                transcript.handleInput(key); // giriş alanı odaktayken çıktıyı kaydır
+                dialog.pageUp(); // giriş alanı odaktayken de diyalog kayar
+            }
+            case PageDown -> {
+                deliverEvent.set(false);
+                dialog.pageDown();
             }
             case Insert -> {
                 if (key.isShiftDown()) {
@@ -668,7 +664,7 @@ final class MainWindow implements MouseSupport.Handler {
         if (installedModels.isKnown() && !installedModels.isInstalled(name)) {
             // Durum kutusu dar; uzun model adlarında komut kesilir, bu yüzden tam komut çıktıya da yazılır.
             notice(" Kurulu değil, komut çıktıda", OctopusTheme.YELLOW);
-            appendOutput("Model kurulu değil. Terminalde çalıştır: ollama pull " + name);
+            dialog.addNote("Model kurulu değil. Terminalde çalıştır: ollama pull " + name);
             return;
         }
         modelSettings.select(mode, name);
@@ -801,7 +797,7 @@ final class MainWindow implements MouseSupport.Handler {
             return;
         }
         job.cancel();
-        appendOutput("\n■ İşlem iptal edildi.");
+        dialog.addAnswer("■ İşlem iptal edildi.");
         finishTask(job);
     }
 
@@ -911,8 +907,8 @@ final class MainWindow implements MouseSupport.Handler {
             pathInput.setText(""); // aynı dosyaya ikinci kez yazma hatasını önler
         }
         lastOutput.setLength(0);
-        appendOutput("\n» [" + mode.getDisplayName() + " · " + modelSettings.modelFor(mode) + "] "
-                + describe(mode, prompt, path));
+        dialog.startTurn("Sen · " + mode.getDisplayName() + " · " + modelSettings.modelFor(mode),
+                describe(mode, prompt, path));
 
         currentStep = "Başlatılıyor...";
         progressDone = 0;
@@ -940,7 +936,7 @@ final class MainWindow implements MouseSupport.Handler {
             if (!job.isCancelled()) { // iptalin yol açtığı istisnalar kullanıcıya hata olarak gösterilmez
                 log.error("Mod çalıştırılırken hata: {}", mode, e);
                 String message = e.getMessage() != null ? e.getMessage() : e.getClass().getSimpleName();
-                ui(() -> appendOutput("Hata: " + message));
+                ui(() -> dialog.addAnswer("Hata: " + message));
             }
         } finally {
             ui(() -> finishTask(job));
@@ -1007,45 +1003,6 @@ final class MainWindow implements MouseSupport.Handler {
 
     private void ui(Runnable task) {
         gui.getGUIThread().invokeLater(task);
-    }
-
-    private void appendOutput(String text) {
-        // Kullanıcı yukarı kaydırmışsa yeni çıktı onu en alta atmasın
-        boolean following = transcript.getCaretPosition().getRow() >= transcript.getLineCount() - 1;
-
-        int columns = gui.getScreen().getTerminalSize().getColumns();
-        // çerçeve(2) + kutu(2) + kaydırma çubuğu(1) + pay(1) + sağ panel
-        int width = Math.max(20, columns - 6 - (SIDE_PANEL_WIDTH + 1));
-        for (String line : text.replace("\t", "    ").split("\\R", -1)) {
-            for (String part : wrap(line, width)) {
-                transcript.addLine(part);
-            }
-        }
-        if (following) {
-            transcript.setCaretPosition(transcript.getLineCount() - 1, 0);
-        }
-    }
-
-    /**
-     * Kelime sınırında böler, boşluk yoksa sert keser.
-     */
-    private static List<String> wrap(String line, int width) {
-        if (line.length() <= width) {
-            return List.of(line);
-        }
-        List<String> parts = new ArrayList<>();
-        String rest = line;
-        while (rest.length() > width) {
-            int lead = rest.length() - rest.stripLeading().length();
-            int cut = rest.lastIndexOf(' ', width);
-            if (cut <= lead) {
-                cut = width;
-            }
-            parts.add(rest.substring(0, cut).stripTrailing());
-            rest = rest.substring(cut).stripLeading();
-        }
-        parts.add(rest);
-        return parts;
     }
 
     /**
