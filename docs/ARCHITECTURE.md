@@ -49,7 +49,7 @@ flowchart TB
     end
 
     subgraph ui["Terminal UI (Lanterna)"]
-        window["MainWindow<br/>PromptArea · InputHistory · ClipboardSupport"]
+        window["MainWindow · DialogView<br/>PromptArea · InputHistory · MouseSupport · ClipboardSupport"]
     end
 
     subgraph modes["Mode layer"]

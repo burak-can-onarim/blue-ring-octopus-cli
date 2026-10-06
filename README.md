@@ -64,8 +64,9 @@ manage and no per-token bill.
   An existing file is never overwritten.
 - **A model per mode.** Choose a different Ollama model for each mode with <kbd>Ctrl</kbd>+<kbd>L</kbd>. The panel
   shows which models are installed (`+`) and which are missing (`-`), and the choice is remembered between runs.
-- **Comfortable terminal UI.** Multi-line prompt, input history, paste from the clipboard, copy the last output,
-  progress bar, and instant cancellation.
+- **Comfortable terminal UI.** A conversation view that keeps the requests and answers of the session and follows the
+  newest message, multi-line prompt, input history, paste from the clipboard, copy the last output, progress bar,
+  mouse wheel scrolling and instant cancellation.
 - **Scriptable.** Every mode is also available as a one-shot command (`analyze`, `generate`), so it works in scripts
   and containers.
 - **Two more modes are on the way:** documentation writing and unit-test generation (see the [roadmap](#roadmap)).
@@ -141,7 +142,7 @@ path, and <kbd>Enter</kbd> runs it.
 | <kbd>Ctrl</kbd>+<kbd>L</kbd> | Open the model panel for the current mode |
 | <kbd>Ctrl</kbd>+<kbd>V</kbd> / <kbd>Shift</kbd>+<kbd>Insert</kbd> | Paste from the clipboard |
 | <kbd>Ctrl</kbd>+<kbd>C</kbd> | Copy the last output to the clipboard |
-| <kbd>PgUp</kbd> / <kbd>PgDn</kbd>, mouse wheel | Scroll the output (the wheel also scrolls a long prompt) |
+| <kbd>PgUp</kbd> / <kbd>PgDn</kbd>, mouse wheel | Scroll the conversation (the wheel also scrolls a long prompt) |
 | Left click | Focus the Prompt or Path field (and place the caret) |
 | <kbd>Esc</kbd> | Cancel the running task, or ask to exit |
 

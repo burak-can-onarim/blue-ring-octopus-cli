@@ -10,11 +10,17 @@ contain breaking changes.
 
 ### Added
 
+- The output area is now a **conversation**: each request appears under a "Sen" heading (with mode and model) and the
+  answer under "Octopus", colour-coded. The history of the session is kept in memory (up to 5000 lines) and cleared
+  when the application quits.
+- The view **follows the newest message** automatically; scrolling up pauses it until you reach the bottom again.
 - Mouse support in the Windows window: the wheel scrolls the output and a long prompt, and a left click focuses the
   Prompt or Path field (and places the caret). Nothing else responds to the mouse.
 
 ### Changed
 
+- New layout: the banner spans the full window width and the model panel is only as tall as the prompt and path
+  fields, which leaves the banner more room.
 - <kbd>Ctrl</kbd>+<kbd>C</kbd> now copies the last output instead of asking to cancel or exit; the old
   <kbd>Ctrl</kbd>+<kbd>O</kbd> shortcut is removed. <kbd>Esc</kbd> cancels the running task or asks to exit.
 
