@@ -7,13 +7,13 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 class AppInfoTest {
 
     @Test
-    void stripsSnapshotSuffix() {
-        assertEquals("0.1.2", AppInfo.normalize("0.1.2-SNAPSHOT"));
+    void keepsReleaseVersion() {
+        assertEquals("1.0.0", AppInfo.normalize("1.0.0"));
     }
 
     @Test
-    void keepsReleaseVersion() {
-        assertEquals("1.0.0", AppInfo.normalize("1.0.0"));
+    void stripsSurroundingWhitespace() {
+        assertEquals("0.1.4", AppInfo.normalize("  0.1.4 "));
     }
 
     @Test

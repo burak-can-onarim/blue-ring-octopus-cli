@@ -74,6 +74,7 @@ Mark breaking changes with `!` (for example `feat!: ...`) and explain them in th
 - [ ] The change is focused and the PR description explains *why*.
 - [ ] `./mvnw verify` passes locally.
 - [ ] Tests were added or updated where it makes sense.
+- [ ] `pom.xml` version is bumped if the change fixes or changes the product.
 - [ ] Documentation and `CHANGELOG.md` are updated.
 - [ ] No secrets, local paths or generated files are included.
 
@@ -82,8 +83,10 @@ Mark breaking changes with `!` (for example `feat!: ...`) and explain them in th
 Maintainers publish releases by pushing a `vX.Y.Z` tag (for example `v0.2.0`; a suffix such as `-rc.1` marks a
 pre-release). The release workflow runs the tests, builds the JAR with that version, creates a GitHub Release with
 generated notes, a SHA-256 checksum and a build-provenance attestation, and publishes the container image to `ghcr.io`.
-The tag is the source of truth for the version; the version in `pom.xml` is only a development placeholder. Version
-numbers follow [Semantic Versioning](https://semver.org/).
+The version lives in `pom.xml` and has no `-SNAPSHOT` suffix: **bump it in every pull request that fixes or changes the
+product** (patch for a fix, minor for a feature while the major version is `0`), and tag a release with the same number
+(`v` + the `pom.xml` version). Documentation- and CI-only changes do not need a bump. Version numbers follow
+[Semantic Versioning](https://semver.org/).
 
 The release notes are generated from merged pull requests and grouped by label. A workflow labels each pull request
 from its Conventional Commit title (`feat:` becomes *enhancement*, `fix:` becomes *bug*, `docs:` becomes

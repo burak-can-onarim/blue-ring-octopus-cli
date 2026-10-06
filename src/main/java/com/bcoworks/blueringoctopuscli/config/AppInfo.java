@@ -6,8 +6,6 @@ import org.springframework.stereotype.Component;
 @Component
 public class AppInfo {
 
-    private static final String SNAPSHOT_SUFFIX = "-SNAPSHOT";
-
     private final String version;
 
     public AppInfo(@Value("${octopus.version:dev}") String version) {
@@ -15,16 +13,13 @@ public class AppInfo {
     }
 
     /**
-     * Boş ya da filtrelenmemiş ("@project.version@") değer "dev" olur; "-SNAPSHOT" son eki gösterilmez.
+     * Boş ya da filtrelenmemiş ("@project.version@") değer "dev" olur; diğerleri olduğu gibi (kırpılmış) gösterilir.
      */
     static String normalize(String raw) {
         if (raw == null || raw.isBlank() || raw.contains("@")) {
             return "dev";
         }
-        String value = raw.strip();
-        return value.endsWith(SNAPSHOT_SUFFIX)
-                ? value.substring(0, value.length() - SNAPSHOT_SUFFIX.length())
-                : value;
+        return raw.strip();
     }
 
     public String version() {

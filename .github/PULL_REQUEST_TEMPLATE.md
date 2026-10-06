@@ -21,4 +21,5 @@
 - [ ] Tests were added or updated where it makes sense
 - [ ] Documentation is updated (`README`, `docs/`)
 - [ ] `CHANGELOG.md` has an entry under **Unreleased** (for user-visible changes)
+- [ ] `pom.xml` version is bumped (for changes that fix or change the product)
 - [ ] The commit messages follow [Conventional Commits](https://www.conventionalcommits.org/)
