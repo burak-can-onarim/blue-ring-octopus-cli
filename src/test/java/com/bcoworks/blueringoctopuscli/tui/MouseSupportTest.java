@@ -2,6 +2,7 @@ package com.bcoworks.blueringoctopuscli.tui;
 
 import org.junit.jupiter.api.Test;
 
+import static org.junit.jupiter.api.Assertions.assertArrayEquals;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
@@ -36,5 +37,40 @@ class MouseSupportTest {
     @Test
     void emptyAreaContainsNothing() {
         assertFalse(MouseSupport.contains(0, 0, 0, 0, 0, 0));
+    }
+
+    @Test
+    void wheelAccumulatorTurnsWholeNotchesIntoLines() {
+        MouseSupport.WheelAccumulator wheel = new MouseSupport.WheelAccumulator();
+
+        assertEquals(3, wheel.add(1.0));
+        assertEquals(-3, wheel.add(-1.0));
+    }
+
+    @Test
+    void wheelAccumulatorCollectsTouchpadFractions() {
+        MouseSupport.WheelAccumulator wheel = new MouseSupport.WheelAccumulator();
+
+        assertEquals(0, wheel.add(0.25)); // 0.75 satır birikti
+        assertEquals(1, wheel.add(0.25)); // 1.5 -> 1 satır, 0.5 artar
+        assertEquals(0, wheel.add(0.1));  // 0.8
+        assertEquals(1, wheel.add(0.1));  // 1.1 -> 1
+    }
+
+    @Test
+    void visualOriginRemovesTheWindowOffsetFromBoxes() {
+        // pencere içeriği (1,1) kaymış: çerçeve (1,1) bildiriyor, kutu (2,25) bildiriyor -> ekranda (1,24)
+        assertArrayEquals(new int[]{1, 24},
+                MouseSupport.visualOrigin(new int[]{2, 25}, new int[]{1, 1}, false, true));
+    }
+
+    @Test
+    void visualOriginAddsTheMissingBorderInsetForInnerComponents() {
+        // kutunun içindeki alan: Lanterna girintiyi eklemedi -> (+1,+1) tamamlanır
+        assertArrayEquals(new int[]{2, 25},
+                MouseSupport.visualOrigin(new int[]{2, 25}, new int[]{1, 1}, true, true));
+        // girinti eklenen bir Lanterna sürümünde ek düzeltme yapılmaz
+        assertArrayEquals(new int[]{2, 25},
+                MouseSupport.visualOrigin(new int[]{3, 26}, new int[]{1, 1}, true, false));
     }
 }

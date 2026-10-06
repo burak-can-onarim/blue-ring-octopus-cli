@@ -39,20 +39,24 @@ java --enable-native-access=ALL-UNNAMED -jar blue-ring-octopus-cli.jar
 ┌ Blue Ring Octopus CLI ───────────────────────────────────────────────────────┐
 │ ┌ banner ──────────────────────────────────────────────────────────────────┐ │
 │ └──────────────────────────────────────────────────────────────────────────┘ │
-│ ┌ Prompt area ────────────────────────────────────────┐ ┌ Model ──────────┐ │
-│ │ conversation + multi-line input                     │ │ model for the   │ │
+│ ┌ Diyalog ────────────────────────────────────────────┐ ┌ Model ──────────┐ │
+│ │ requests and answers of the session                 │ │ model for the   │ │
 │ └─────────────────────────────────────────────────────┘ │ current mode    │ │
-│ ┌ Path ───────────────────────────────────────────────┐ │ ● selected      │ │
-│ └─────────────────────────────────────────────────────┘ └─────────────────┘ │
+│ ┌ Prompt ─────────────────────────────────────────────┐ │ ● selected      │ │
+│ │ hint + multi-line input                             │ │ + installed     │ │
+│ └─────────────────────────────────────────────────────┘ │ - not installed │ │
+│ ┌ Path ───────────────────────────────────────────────┐ └─────────────────┘ │
+│ └─────────────────────────────────────────────────────┘                     │
 │ ┌ Mode ┐ ┌ Status / progress ───────────────────────────┐ ┌ Active model ──┐ │
 │ key hints                                                                    │
 └──────────────────────────────────────────────────────────────────────────────┘
 ```
 
-The upper part of the Prompt area is a **conversation**: every request appears under a "Sen" (you) heading with the
-mode and model, and the answer under "Octopus". The history of the session stays in memory (up to 5000 lines) and is
-gone when you quit. The view follows the newest message; scroll up to read earlier ones and it stops following until you
-scroll back to the bottom.
+The **Diyalog** box is a conversation: every request appears under a "Sen" (you) heading with the mode and model, and
+the answer under "Octopus". It starts empty. The history of the session stays in memory (up to 5000 lines) and is gone
+when you quit. The view follows the newest message; scroll up to read earlier ones and it stops following until you
+scroll back to the bottom. The **Prompt** box below it is where you type; the line above the input tells what the
+current mode expects.
 
 On Windows the UI opens in its own window (the title is *Blue Ring Octopus CLI*); closing it with the **X** button
 asks for confirmation. On Linux and macOS it draws inside the current terminal, so use a terminal with true-colour
@@ -72,12 +76,12 @@ and UTF-8 support.
 | <kbd>Ctrl</kbd>+<kbd>C</kbd> | Copy the output of the last run to the clipboard |
 | <kbd>PgUp</kbd> / <kbd>PgDn</kbd> | Scroll the conversation while typing |
 | Mouse wheel | Over the conversation: scroll it. Over the prompt: scroll a long prompt without moving the caret |
-| Left click | Focus the Prompt or Path field and place the caret where you clicked |
+| Left click | On the Prompt or Path box: focus it (clicking inside the text also places the caret) |
 | <kbd>Esc</kbd> | While a task runs: ask to cancel it. Otherwise: ask to exit |
 
 Typing `exit` (or `cikis`) in the prompt and pressing <kbd>Enter</kbd> also quits.
 
-**Mouse.** Only three things respond to the mouse, on purpose: the wheel over the output, the wheel over a long prompt, and a left click on the Prompt or Path field. Everything else (modes, the model list, dialogs) stays on the keyboard. Mouse support currently exists in the Windows window only; in a Linux/macOS terminal the mouse keeps its normal behaviour, so you can still select and copy text with it.
+**Mouse.** Only three things respond to the mouse, on purpose: the wheel over the Diyalog box, the wheel over a long prompt, and a left click on the Prompt or Path box. Touchpads (smooth, fractional scrolling) work too. Everything else (modes, the model list, dialogs) stays on the keyboard. Mouse support currently exists in the Windows window only; in a Linux/macOS terminal the mouse keeps its normal behaviour, so you can still select and copy text with it.
 
 ## Modes
 

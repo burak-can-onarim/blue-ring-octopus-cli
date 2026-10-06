@@ -22,7 +22,7 @@ final class BannerArt {
 
     private BannerArt(List<String> full, String version) {
         this.full = full;
-        this.compact = List.of("BLUE RING OCTOPUS CLI  ·  Local AI Code Analyzer  ·  v" + version);
+        this.compact = List.of("BLUE RING OCTOPUS CLI  ·  Local AI Code Assistant  ·  v" + version);
         this.fullWidth = full.stream().mapToInt(String::length).max().orElse(0);
     }
 

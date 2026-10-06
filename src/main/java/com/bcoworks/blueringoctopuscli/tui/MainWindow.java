@@ -70,6 +70,9 @@ final class MainWindow implements MouseSupport.Handler {
     private final BasicWindow window = new BasicWindow("Blue Ring Octopus CLI");
     private final Panel bannerPanel = new Panel(linear(Direction.VERTICAL, 0));
     private final DialogView dialog = new DialogView();
+    private Border dialogBox;
+    private Border promptBox;
+    private Border pathBox;
     private final PromptArea promptInput = new PromptArea();
     private final TextBox pathInput = new TextBox(new TerminalSize(40, 1));
     private final Label hintLabel = new Label("");
@@ -183,7 +186,8 @@ final class MainWindow implements MouseSupport.Handler {
     // ---------------------------------------------------------------- mouse
 
     /**
-     * Sol tık: yalnızca prompt ve path alanlarına odaklanır. Başka hiçbir şey fareyle tetiklenmez.
+     * Sol tık: prompt ya da path kutusuna (kenarlık ve ipucu dahil) odaklanır; alanın içindeyse imleç de oraya gider.
+     * Başka hiçbir şey fareyle tetiklenmez.
      */
     @Override
     public void onClick(int column, int row) {
@@ -191,19 +195,23 @@ final class MainWindow implements MouseSupport.Handler {
             if (dialogOpen.get()) {
                 return;
             }
-            if (isOver(promptInput, column, row)) {
+            if (isOverBox(promptBox, column, row)) {
                 focusField(promptInput);
-                promptInput.placeCaretAt(column - promptInput.getGlobalPosition().getColumn(),
-                        row - promptInput.getGlobalPosition().getRow());
-            } else if (isOver(pathInput, column, row)) {
+                if (isOver(promptInput, true, column, row)) {
+                    int[] at = originOf(promptInput, true);
+                    promptInput.placeCaretAt(column - at[0], row - at[1]);
+                }
+            } else if (isOverBox(pathBox, column, row)) {
                 focusField(pathInput);
-                placePathCaret(column - pathInput.getGlobalPosition().getColumn());
+                if (isOver(pathInput, true, column, row)) {
+                    placePathCaret(column - originOf(pathInput, true)[0]);
+                }
             }
         });
     }
 
     /**
-     * Tekerlek: imlecin üstündeki çıktı ya da prompt alanını kaydırır (negatif yukarı).
+     * Tekerlek: imlecin üstündeki diyalog ya da prompt kutusunu kaydırır (negatif yukarı).
      */
     @Override
     public void onScroll(int column, int row, int lines) {
@@ -211,18 +219,35 @@ final class MainWindow implements MouseSupport.Handler {
             if (dialogOpen.get()) {
                 return;
             }
-            if (isOver(dialog, column, row)) {
+            if (isOverBox(dialogBox, column, row)) {
                 dialog.scroll(lines);
-            } else if (isOver(promptInput, column, row)) {
+            } else if (isOverBox(promptBox, column, row)) {
                 promptInput.scroll(lines);
             }
         });
     }
 
-    private static boolean isOver(Component component, int column, int row) {
+    /**
+     * Bileşenin ekranda çizildiği sol-üst hücre (sütun, satır). Lanterna'nın global konumları çizimden sapar, bkz.
+     * {@link MouseSupport#visualOrigin}. Border'ın kendisi için insideBorder=false, içindekiler için true verilir.
+     */
+    private int[] originOf(Component component, boolean insideBorder) {
         TerminalPosition at = component.getGlobalPosition();
+        TerminalPosition frame = window.getComponent().getGlobalPosition();
+        // diyalog kutusunun içindeki DialogView ile kutunun konumu aynıysa, Lanterna kenarlık girintisini eklemiyor
+        boolean insetMissing = dialog.getGlobalPosition().equals(dialogBox.getGlobalPosition());
+        return MouseSupport.visualOrigin(new int[]{at.getColumn(), at.getRow()},
+                new int[]{frame.getColumn(), frame.getRow()}, insideBorder, insetMissing);
+    }
+
+    private boolean isOver(Component component, boolean insideBorder, int column, int row) {
+        int[] at = originOf(component, insideBorder);
         TerminalSize size = component.getSize();
-        return MouseSupport.contains(at.getColumn(), at.getRow(), size.getColumns(), size.getRows(), column, row);
+        return MouseSupport.contains(at[0], at[1], size.getColumns(), size.getRows(), column, row);
+    }
+
+    private boolean isOverBox(Border box, int column, int row) {
+        return isOver(box, false, column, row);
     }
 
     private void focusField(Interactable field) {
@@ -256,28 +281,26 @@ final class MainWindow implements MouseSupport.Handler {
         Border bannerBox = bannerHolder.withBorder(Borders.singleLine());
         bannerBox.setLayoutData(fill());
 
+        // Diyalog: istekler ve yanıtlar. Prompt girişinden ayrı bir kutudur.
+        dialogBox = dialog.withBorder(Borders.singleLine(" Diyalog "));
+        dialogBox.setLayoutData(grow());
+
+        // Prompt: ipucu satırı + çok satırlı giriş
         Panel promptContent = new Panel(linear(Direction.VERTICAL, 0));
-        dialog.setLayoutData(grow());
-        promptContent.addComponent(dialog);
-
-        Separator separator = new Separator(Direction.HORIZONTAL);
-        separator.setLayoutData(fill());
-        promptContent.addComponent(separator);
-
         hintLabel.setForegroundColor(OctopusTheme.YELLOW);
         promptContent.addComponent(hintLabel);
-
         promptContent.addComponent(inputRow(OctopusTheme.MAUVE, promptInput));
-        Border promptBox = promptContent.withBorder(Borders.singleLine(" Prompt Alanı "));
-        promptBox.setLayoutData(grow());
+        promptBox = promptContent.withBorder(Borders.singleLine(" Prompt "));
+        promptBox.setLayoutData(fill());
 
-        Border pathBox = inputRow(OctopusTheme.TEAL, pathInput)
+        pathBox = inputRow(OctopusTheme.TEAL, pathInput)
                 .withBorder(Borders.singleLine(" Path · çalışma dizini: " + shorten(System.getProperty("user.dir")) + " "));
         pathBox.setLayoutData(fill());
 
-        // --- orta: solda diyalog + prompt + path, sağda model paneli (yalnızca bu satırın yüksekliği kadar)
+        // --- orta: solda diyalog / prompt / path kutuları, sağda model paneli (bu satırın yüksekliği kadar)
         Panel left = new Panel(linear(Direction.VERTICAL, 0));
         left.setLayoutData(grow());
+        left.addComponent(dialogBox);
         left.addComponent(promptBox);
         left.addComponent(pathBox);
 
@@ -336,7 +359,6 @@ final class MainWindow implements MouseSupport.Handler {
         refreshMode();
         refreshInstalledAsync();
         setStatus(" Hazır", OctopusTheme.GREEN);
-        dialog.addNote("Hoş geldin. Tab ile mod değiştir, prompt'u yazıp Enter'a bas.");
     }
 
     private Border buildModelPanel() {
