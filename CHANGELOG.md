@@ -19,6 +19,8 @@ contain breaking changes.
 
 ### Changed
 
+- The project version no longer carries a `-SNAPSHOT` suffix (the banner shows the version as it is), and the version in
+  `pom.xml` is bumped with every fix or change to the product.
 - New layout: the banner spans the full window width and the model panel is only as tall as the prompt and path
   fields, which leaves the banner more room.
 - <kbd>Ctrl</kbd>+<kbd>C</kbd> now copies the last output instead of asking to cancel or exit; the old
