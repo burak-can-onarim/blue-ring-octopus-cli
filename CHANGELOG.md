@@ -8,6 +8,10 @@ contain breaking changes.
 
 ## [Unreleased]
 
+## [0.1.5] - 2026-10-06
+
+> `0.1.4` was only a development version and was never tagged; this release contains everything since `0.1.3`.
+
 ### Added
 
 - The output area is now a **conversation**: each request appears under a "Sen" heading (with mode and model) and the
@@ -107,7 +111,8 @@ contain breaking changes.
 - `start-agent.bat` launcher for Windows with a model picker.
 - Windows archive with a bundled JRE.
 
-[Unreleased]: https://github.com/burak-can-onarim/blue-ring-octopus-cli/compare/v0.1.3...HEAD
+[Unreleased]: https://github.com/burak-can-onarim/blue-ring-octopus-cli/compare/v0.1.5...HEAD
+[0.1.5]: https://github.com/burak-can-onarim/blue-ring-octopus-cli/compare/v0.1.3...v0.1.5
 [0.1.3]: https://github.com/burak-can-onarim/blue-ring-octopus-cli/compare/v0.1.2...v0.1.3
 [0.1.2]: https://github.com/burak-can-onarim/blue-ring-octopus-cli/compare/v0.1.0...v0.1.2
 [0.1.0]: https://github.com/burak-can-onarim/blue-ring-octopus-cli/compare/v0.0.1...v0.1.0
