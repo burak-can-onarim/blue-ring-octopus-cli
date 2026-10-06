@@ -9,6 +9,7 @@ import com.bcoworks.blueringoctopuscli.model.InstalledModels;
 import com.bcoworks.blueringoctopuscli.model.ModelCatalog;
 import com.bcoworks.blueringoctopuscli.model.ModelSettings;
 import com.bcoworks.blueringoctopuscli.util.PathUtils;
+import com.googlecode.lanterna.TerminalPosition;
 import com.googlecode.lanterna.TerminalSize;
 import com.googlecode.lanterna.TextColor;
 import com.googlecode.lanterna.gui2.*;
@@ -38,7 +39,7 @@ import java.util.concurrent.atomic.AtomicInteger;
  * │ kısayollar                                               │
  */
 @Slf4j
-final class MainWindow {
+final class MainWindow implements MouseSupport.Handler {
 
     private static final int SIDE_PANEL_WIDTH = 30; // kenarlık dahil
     private static final int SIDE_INNER = SIDE_PANEL_WIDTH - 2;
@@ -53,9 +54,10 @@ final class MainWindow {
             .orElse(12) + 4;
     private static final long NOTICE_MILLIS = 3_000;
     private static final String KEYS_1 =
-            " Enter Gönder · Shift+Enter Yeni satır · ↑↓ Geçmiş · Tab Mod · PgUp/PgDn Çıktıyı kaydır";
+            " Enter Gönder · Shift+Enter Yeni satır · ↑↓ Geçmiş · Tab Mod · PgUp/PgDn/Tekerlek Kaydır · Sol tık Alan seç";
     private static final String KEYS_2 =
-            " Ctrl+P Prompt/Path · Ctrl+L Model · Ctrl+V Yapıştır · Ctrl+O Çıktıyı kopyala · Esc İptal / Çıkış";
+            " Ctrl+P Prompt/Path · Ctrl+L Model · Ctrl+V Yapıştır · Ctrl+C Çıktıyı kopyala · Esc İptal / Çıkış";
+    private static final int WHEEL_SCROLL_LINES = MouseSupport.LINES_PER_WHEEL_NOTCH;
 
     private final MultiWindowTextGUI gui;
     private final AppContext appContext;
@@ -176,6 +178,75 @@ final class MainWindow {
      */
     void onResize(TerminalSize size) {
         ui(() -> applyBanner(size));
+    }
+
+    // ---------------------------------------------------------------- mouse
+
+    /**
+     * Sol tık: yalnızca prompt ve path alanlarına odaklanır. Başka hiçbir şey fareyle tetiklenmez.
+     */
+    @Override
+    public void onClick(int column, int row) {
+        ui(() -> {
+            if (dialogOpen.get()) {
+                return;
+            }
+            if (isOver(promptInput, column, row)) {
+                focusField(promptInput);
+                promptInput.placeCaretAt(column - promptInput.getGlobalPosition().getColumn(),
+                        row - promptInput.getGlobalPosition().getRow());
+            } else if (isOver(pathInput, column, row)) {
+                focusField(pathInput);
+                placePathCaret(column - pathInput.getGlobalPosition().getColumn());
+            }
+        });
+    }
+
+    /**
+     * Tekerlek: imlecin üstündeki çıktı ya da prompt alanını kaydırır (negatif yukarı).
+     */
+    @Override
+    public void onScroll(int column, int row, int lines) {
+        ui(() -> {
+            if (dialogOpen.get()) {
+                return;
+            }
+            if (isOver(transcript, column, row)) {
+                scrollTranscript(lines);
+            } else if (isOver(promptInput, column, row)) {
+                promptInput.scroll(lines);
+            }
+        });
+    }
+
+    private static boolean isOver(Component component, int column, int row) {
+        TerminalPosition at = component.getGlobalPosition();
+        TerminalSize size = component.getSize();
+        return MouseSupport.contains(at.getColumn(), at.getRow(), size.getColumns(), size.getRows(), column, row);
+    }
+
+    private void focusField(Interactable field) {
+        if (focusedOnModels()) {
+            closeModelPanel();
+        }
+        window.setFocusedInteractable(field);
+        refreshHint();
+    }
+
+    private void placePathCaret(int column) {
+        int left = pathInput.getRenderer().getViewTopLeft().getColumn();
+        int target = Math.clamp(column + left, 0, pathInput.getText().length());
+        pathInput.setCaretPosition(0, target);
+    }
+
+    /**
+     * Salt okunur TextBox'ın görünümü imleçten bağımsızdır, PgUp/PgDn gibi doğrudan görünüm üst satırı ayarlanır
+     * (alt sınır çizimde TextBox tarafından düzeltilir).
+     */
+    private void scrollTranscript(int lines) {
+        TextBox.TextBoxRenderer renderer = transcript.getRenderer();
+        renderer.setViewTopLeft(renderer.getViewTopLeft().withRelativeRow(lines));
+        transcript.invalidate();
     }
 
     /**
@@ -355,9 +426,9 @@ final class MainWindow {
         }
 
         if (key.getKeyType() == KeyType.Character) {
-            if (ctrl(key, 'c')) {
+            if (ctrl(key, 'c') || ctrl(key, 'o')) { // Ctrl+O eski kısayol, Ctrl+C ile aynı işi yapar
                 deliverEvent.set(false);
-                onEscapeOrInterrupt();
+                copyLastOutput();
             } else if (ctrl(key, 'p')) {
                 deliverEvent.set(false);
                 toggleFocus();
@@ -367,9 +438,6 @@ final class MainWindow {
             } else if (ctrl(key, 'v')) {
                 deliverEvent.set(false);
                 paste();
-            } else if (ctrl(key, 'o')) {
-                deliverEvent.set(false);
-                copyLastOutput();
             }
             return; // normal karakterler olduğu gibi iletilir
         }
