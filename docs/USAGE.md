@@ -60,7 +60,7 @@ and UTF-8 support.
 | <kbd>Ctrl</kbd>+<kbd>P</kbd> | Switch focus between the Prompt field and the Path field |
 | <kbd>Ctrl</kbd>+<kbd>L</kbd> | Open (or close) the model panel for the current mode |
 | <kbd>Ctrl</kbd>+<kbd>V</kbd>, <kbd>Shift</kbd>+<kbd>Insert</kbd> | Paste. In the Path field, surrounding quotes from Windows "Copy as path" are removed |
-| <kbd>Ctrl</kbd>+<kbd>C</kbd> | Copy the output of the last run to the clipboard (<kbd>Ctrl</kbd>+<kbd>O</kbd> still works) |
+| <kbd>Ctrl</kbd>+<kbd>C</kbd> | Copy the output of the last run to the clipboard |
 | <kbd>PgUp</kbd> / <kbd>PgDn</kbd> | Scroll the output while typing |
 | Mouse wheel | Over the output: scroll it. Over the prompt: scroll a long prompt without moving the caret |
 | Left click | Focus the Prompt or Path field and place the caret where you clicked |

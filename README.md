@@ -140,7 +140,7 @@ path, and <kbd>Enter</kbd> runs it.
 | <kbd>Ctrl</kbd>+<kbd>P</kbd> | Switch between the Prompt and Path fields |
 | <kbd>Ctrl</kbd>+<kbd>L</kbd> | Open the model panel for the current mode |
 | <kbd>Ctrl</kbd>+<kbd>V</kbd> / <kbd>Shift</kbd>+<kbd>Insert</kbd> | Paste from the clipboard |
-| <kbd>Ctrl</kbd>+<kbd>C</kbd> | Copy the last output to the clipboard (<kbd>Ctrl</kbd>+<kbd>O</kbd> still works) |
+| <kbd>Ctrl</kbd>+<kbd>C</kbd> | Copy the last output to the clipboard |
 | <kbd>PgUp</kbd> / <kbd>PgDn</kbd>, mouse wheel | Scroll the output (the wheel also scrolls a long prompt) |
 | Left click | Focus the Prompt or Path field (and place the caret) |
 | <kbd>Esc</kbd> | Cancel the running task, or ask to exit |

@@ -426,7 +426,7 @@ final class MainWindow implements MouseSupport.Handler {
         }
 
         if (key.getKeyType() == KeyType.Character) {
-            if (ctrl(key, 'c') || ctrl(key, 'o')) { // Ctrl+O eski kısayol, Ctrl+C ile aynı işi yapar
+            if (ctrl(key, 'c')) {
                 deliverEvent.set(false);
                 copyLastOutput();
             } else if (ctrl(key, 'p')) {
@@ -508,7 +508,7 @@ final class MainWindow implements MouseSupport.Handler {
             case Character -> {
                 if (ctrl(key, 'l')) {
                     closeModelPanel();
-                } else if (ctrl(key, 'c') || ctrl(key, 'p') || ctrl(key, 'o')) {
+                } else if (ctrl(key, 'c') || ctrl(key, 'p')) {
                     return false;
                 }
             }

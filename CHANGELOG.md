@@ -15,8 +15,8 @@ contain breaking changes.
 
 ### Changed
 
-- <kbd>Ctrl</kbd>+<kbd>C</kbd> now copies the last output instead of asking to cancel or exit (<kbd>Ctrl</kbd>+<kbd>O</kbd>
-  still works). <kbd>Esc</kbd> cancels the running task or asks to exit.
+- <kbd>Ctrl</kbd>+<kbd>C</kbd> now copies the last output instead of asking to cancel or exit; the old
+  <kbd>Ctrl</kbd>+<kbd>O</kbd> shortcut is removed. <kbd>Esc</kbd> cancels the running task or asks to exit.
 
 ## [0.1.3] - 2026-10-06
 
