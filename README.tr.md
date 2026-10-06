@@ -113,6 +113,9 @@ java --enable-native-access=ALL-UNNAMED -jar target/blue-ring-octopus-cli.jar
 
 Windows'ta derleme için `mvnw.cmd`, başlatmak için de modeli küçük bir menüden seçtiren `start-agent.bat` kullanılabilir.
 
+Masaüstüne uygulama ikonlu bir **Blue Ring Octopus CLI** kısayolu koymak için `scripts\create-shortcut.bat` dosyasını bir kez
+çalıştırın; kısayol `start-agent.bat` dosyasını başlatır.
+
 ### Seçenek 3 — Docker
 
 [Docker ile çalıştırma](#docker-ile-çalıştırma) bölümüne bakın.
