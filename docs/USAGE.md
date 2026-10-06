@@ -60,11 +60,15 @@ and UTF-8 support.
 | <kbd>Ctrl</kbd>+<kbd>P</kbd> | Switch focus between the Prompt field and the Path field |
 | <kbd>Ctrl</kbd>+<kbd>L</kbd> | Open (or close) the model panel for the current mode |
 | <kbd>Ctrl</kbd>+<kbd>V</kbd>, <kbd>Shift</kbd>+<kbd>Insert</kbd> | Paste. In the Path field, surrounding quotes from Windows "Copy as path" are removed |
-| <kbd>Ctrl</kbd>+<kbd>O</kbd> | Copy the output of the last run to the clipboard |
+| <kbd>Ctrl</kbd>+<kbd>C</kbd> | Copy the output of the last run to the clipboard |
 | <kbd>PgUp</kbd> / <kbd>PgDn</kbd> | Scroll the output while typing |
-| <kbd>Esc</kbd> or <kbd>Ctrl</kbd>+<kbd>C</kbd> | While a task runs: ask to cancel it. Otherwise: ask to exit |
+| Mouse wheel | Over the output: scroll it. Over the prompt: scroll a long prompt without moving the caret |
+| Left click | Focus the Prompt or Path field and place the caret where you clicked |
+| <kbd>Esc</kbd> | While a task runs: ask to cancel it. Otherwise: ask to exit |
 
 Typing `exit` (or `cikis`) in the prompt and pressing <kbd>Enter</kbd> also quits.
+
+**Mouse.** Only three things respond to the mouse, on purpose: the wheel over the output, the wheel over a long prompt, and a left click on the Prompt or Path field. Everything else (modes, the model list, dialogs) stays on the keyboard. Mouse support currently exists in the Windows window only; in a Linux/macOS terminal the mouse keeps its normal behaviour, so you can still select and copy text with it.
 
 ## Modes
 

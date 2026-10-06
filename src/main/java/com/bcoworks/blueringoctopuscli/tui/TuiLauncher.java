@@ -73,8 +73,10 @@ public class TuiLauncher {
                 .setInitialTerminalSize(INITIAL_SIZE)
                 .setPreferTerminalEmulator(emulator)
                 .setTerminalEmulatorTitle("Blue Ring Octopus CLI");
+        SwingTerminalFontConfiguration fontConfiguration = null;
         if (emulator) {
-            factory.setTerminalEmulatorFontConfiguration(SwingTerminalFontConfiguration.newInstance(pickFont()));
+            fontConfiguration = SwingTerminalFontConfiguration.newInstance(pickFont());
+            factory.setTerminalEmulatorFontConfiguration(fontConfiguration);
         }
 
         Terminal terminal = factory.createTerminal();
@@ -87,7 +89,7 @@ public class TuiLauncher {
             MainWindow main = new MainWindow(gui, appContext, dispatcher, aiExecutor, banner, modelSettings, installedModels);
             terminal.addResizeListener((_, size) -> main.onResize(size));
             if (terminal instanceof SwingTerminalFrame frame) {
-                configureFrame(frame, main);
+                configureFrame(frame, main, fontConfiguration);
             }
             try {
                 main.show();
@@ -102,10 +104,14 @@ public class TuiLauncher {
     /**
      * X düğmesi doğrudan kapatmaz, onay ister. Açılış boyutu en küçük boyut olur. Pencereye uygulama ikonu verilir.
      */
-    private static void configureFrame(SwingTerminalFrame frame, MainWindow main) {
+    private static void configureFrame(SwingTerminalFrame frame, MainWindow main,
+                                       SwingTerminalFontConfiguration fontConfiguration) {
         List<Image> icons = AppIcons.load();
         if (!icons.isEmpty()) {
             frame.setIconImages(icons);
+        }
+        if (fontConfiguration != null) {
+            MouseSupport.attach(frame, fontConfiguration.getFontWidth(), fontConfiguration.getFontHeight(), main);
         }
         frame.setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE);
         frame.addWindowListener(new WindowAdapter() {

@@ -136,9 +136,10 @@ Uygulamayı **argümansız** çalıştırınca arayüz açılır. <kbd>Tab</kbd>
 | <kbd>Ctrl</kbd>+<kbd>P</kbd> | Prompt ve Path alanları arasında geçiş |
 | <kbd>Ctrl</kbd>+<kbd>L</kbd> | Geçerli mod için model panelini açar |
 | <kbd>Ctrl</kbd>+<kbd>V</kbd> / <kbd>Shift</kbd>+<kbd>Insert</kbd> | Panodan yapıştırır |
-| <kbd>Ctrl</kbd>+<kbd>O</kbd> | Son çıktıyı panoya kopyalar |
-| <kbd>PgUp</kbd> / <kbd>PgDn</kbd> | Çıktıyı kaydırır |
-| <kbd>Esc</kbd> veya <kbd>Ctrl</kbd>+<kbd>C</kbd> | Çalışan işlemi iptal eder ya da çıkış sorar |
+| <kbd>Ctrl</kbd>+<kbd>C</kbd> | Son çıktıyı panoya kopyalar |
+| <kbd>PgUp</kbd> / <kbd>PgDn</kbd>, fare tekerleği | Çıktıyı kaydırır (tekerlek uzun prompt'u da kaydırır) |
+| Sol tık | Prompt ya da Path alanına odaklanır (imleci de yerleştirir) |
+| <kbd>Esc</kbd> | Çalışan işlemi iptal eder ya da çıkış sorar |
 
 ### Tek seferlik komutlar
 

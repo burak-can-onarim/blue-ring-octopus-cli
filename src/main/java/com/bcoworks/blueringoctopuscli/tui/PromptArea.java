@@ -41,6 +41,7 @@ final class PromptArea extends AbstractInteractableComponent<PromptArea> {
     private int caret;
     private int goalColumn = -1; // yukarı/aşağı giderken korunan sütun
     private int topLine;
+    private boolean scrollPinned; // fare tekerleğiyle kaydırıldı: imleç görünür kalmaya zorlanmaz
     private int rows = MIN_ROWS;
     private int lastWidth = DEFAULT_WIDTH;
 
@@ -99,6 +100,31 @@ final class PromptArea extends AbstractInteractableComponent<PromptArea> {
         return false;
     }
 
+    /**
+     * Fare tekerleği: görünümü delta satır kaydırır (negatif yukarı). İmleç yerinde kalır, görünür kalmak zorunda
+     * değildir; bir sonraki tuş vuruşu görünümü yine imlece döndürür.
+     */
+    void scroll(int delta) {
+        List<Line> lines = layout();
+        int visible = getSize().getRows() > 0 ? getSize().getRows() : rows;
+        topLine = Math.clamp(topLine + delta, 0, Math.max(0, lines.size() - visible));
+        scrollPinned = true;
+        invalidate();
+    }
+
+    /**
+     * Alan içindeki (sütun, satır) hücresine tıklanınca imleci oraya koyar.
+     */
+    void placeCaretAt(int column, int row) {
+        List<Line> lines = layout();
+        int target = Math.clamp(topLine + row, 0, lines.size() - 1);
+        Line line = lines.get(target);
+        caret = line.start() + Math.clamp(column, 0, line.maxColumn());
+        goalColumn = -1;
+        scrollPinned = false;
+        invalidate();
+    }
+
     // ---------------------------------------------------------------- input
 
     @Override
@@ -151,12 +177,14 @@ final class PromptArea extends AbstractInteractableComponent<PromptArea> {
     }
 
     private void moveHorizontally(int delta) {
+        scrollPinned = false;
         caret = Math.max(0, Math.min(text.length(), caret + delta));
         goalColumn = -1;
         invalidate();
     }
 
     private void jumpTo(boolean end) {
+        scrollPinned = false;
         List<Line> lines = layout();
         Line line = lines.get(locate(lines)[0]);
         caret = end ? line.start() + line.maxColumn() : line.start();
@@ -171,6 +199,7 @@ final class PromptArea extends AbstractInteractableComponent<PromptArea> {
         if (targetRow < 0 || targetRow >= lines.size()) {
             return false;
         }
+        scrollPinned = false;
         if (goalColumn < 0) {
             goalColumn = position[1];
         }
@@ -181,6 +210,7 @@ final class PromptArea extends AbstractInteractableComponent<PromptArea> {
     }
 
     private void afterEdit() {
+        scrollPinned = false;
         goalColumn = -1;
         updateRows(currentWidth());
         invalidate();
@@ -266,11 +296,13 @@ final class PromptArea extends AbstractInteractableComponent<PromptArea> {
     }
 
     private void keepCaretVisible(List<Line> lines, int visibleRows) {
-        int row = locate(lines)[0];
-        if (row < topLine) {
-            topLine = row;
-        } else if (row >= topLine + visibleRows) {
-            topLine = row - visibleRows + 1;
+        if (!scrollPinned) {
+            int row = locate(lines)[0];
+            if (row < topLine) {
+                topLine = row;
+            } else if (row >= topLine + visibleRows) {
+                topLine = row - visibleRows + 1;
+            }
         }
         topLine = Math.clamp(topLine, 0, Math.max(0, lines.size() - visibleRows));
     }
