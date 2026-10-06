@@ -8,8 +8,10 @@ contain breaking changes.
 
 ## [Unreleased]
 
-> This section also covers the work that was developed as `0.1.1` and `0.1.2` (see the version history in `pom.xml`)
-> but was never tagged or published.
+## [0.1.2] - 2026-10-06
+
+> This release also contains the work that was developed as `0.1.1` (see the version history in `pom.xml`)
+> but was never tagged or published, and everything since `0.1.0`.
 
 ### Added
 
@@ -40,6 +42,7 @@ contain breaking changes.
 ### Fixed
 
 - The banner no longer shows `-SNAPSHOT` in the version, and the `ollama pull` hint stays readable.
+- `mvnw` is now executable in git, so the Maven wrapper runs on Linux (CI and Docker builds).
 
 ## [0.1.0] - 2026-10-04
 
@@ -64,6 +67,7 @@ contain breaking changes.
 - `start-agent.bat` launcher for Windows with a model picker.
 - Windows archive with a bundled JRE.
 
-[Unreleased]: https://github.com/burak-can-onarim/blue-ring-octopus-cli/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/burak-can-onarim/blue-ring-octopus-cli/compare/v0.1.2...HEAD
+[0.1.2]: https://github.com/burak-can-onarim/blue-ring-octopus-cli/compare/v0.1.0...v0.1.2
 [0.1.0]: https://github.com/burak-can-onarim/blue-ring-octopus-cli/compare/v0.0.1...v0.1.0
 [0.0.1]: https://github.com/burak-can-onarim/blue-ring-octopus-cli/releases/tag/v0.0.1
