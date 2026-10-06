@@ -8,7 +8,7 @@ public enum AppMode {
             "Bu modda prompt gerekmez, Enter ile analizi başlat.",
             "Analiz edilecek dizin veya dosya (boşsa çalışma dizini)."),
     KOD_GENERATE("Kod Generate",
-            "Ne yazılsın? Örn: ürünler için bir Spring REST controller",
+            "Üretilecek Java sınıfını anlatın. Örn: ürünleri listeleyen bir Spring REST controller",
             "Kayıt yolu, isteğe bağlı (boşsa generated/<SınıfAdı>.java)."),
     DOKUMAN_HAZIRLAMA("Döküman Hazırlama",
             "Bu mod henüz hazır değil.",

@@ -19,12 +19,21 @@ contain breaking changes.
 
 ### Changed
 
+- The conversation and the prompt input are now separate boxes: **Diyalog** (formerly part of "Prompt Alanı") and **Prompt**.
+  The Diyalog starts empty.
+- The banner subtitle reads "Local AI Code Assistant".
+- The prompt hint of the **Kod Generate** mode is reworded.
 - The project version no longer carries a `-SNAPSHOT` suffix (the banner shows the version as it is), and the version in
   `pom.xml` is bumped with every fix or change to the product.
 - New layout: the banner spans the full window width and the model panel is only as tall as the prompt and path
   fields, which leaves the banner more room.
 - <kbd>Ctrl</kbd>+<kbd>C</kbd> now copies the last output instead of asking to cancel or exit; the old
   <kbd>Ctrl</kbd>+<kbd>O</kbd> shortcut is removed. <kbd>Esc</kbd> cancels the running task or asks to exit.
+
+### Fixed
+
+- Mouse: the whole Prompt and Path boxes (borders and hint line included) react to a left click, and touchpads and
+  smooth-scrolling mice now scroll the Diyalog (fractional wheel events were ignored before).
 
 ## [0.1.3] - 2026-10-06
 
