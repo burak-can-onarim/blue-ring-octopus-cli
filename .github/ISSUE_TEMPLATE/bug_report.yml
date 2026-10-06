@@ -50,7 +50,7 @@ body:
     attributes:
       label: Application version
       description: Shown in the banner, or the release / image tag you used.
-      placeholder: "0.1.2"
+      placeholder: "0.1.3"
     validations:
       required: true
   - type: input
