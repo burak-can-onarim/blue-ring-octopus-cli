@@ -117,6 +117,9 @@ java --enable-native-access=ALL-UNNAMED -jar target/blue-ring-octopus-cli.jar
 On Windows you can use `mvnw.cmd` for the build and the bundled `start-agent.bat` launcher, which also lets you pick
 the model from a small menu.
 
+Run `scripts\create-shortcut.bat` once to put a **Blue Ring Octopus CLI** shortcut with the application icon on your
+Desktop; it starts `start-agent.bat`.
+
 ### Option 3 — Docker
 
 See [Run with Docker](#run-with-docker).

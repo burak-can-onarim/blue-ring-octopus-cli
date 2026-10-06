@@ -20,6 +20,7 @@ import javax.swing.WindowConstants;
 import java.awt.Dimension;
 import java.awt.Font;
 import java.awt.GraphicsEnvironment;
+import java.awt.Image;
 import java.awt.Toolkit;
 import java.awt.event.WindowAdapter;
 import java.awt.event.WindowEvent;
@@ -99,9 +100,13 @@ public class TuiLauncher {
     }
 
     /**
-     * X düğmesi doğrudan kapatmaz, onay ister. Açılış boyutu en küçük boyut olur.
+     * X düğmesi doğrudan kapatmaz, onay ister. Açılış boyutu en küçük boyut olur. Pencereye uygulama ikonu verilir.
      */
     private static void configureFrame(SwingTerminalFrame frame, MainWindow main) {
+        List<Image> icons = AppIcons.load();
+        if (!icons.isEmpty()) {
+            frame.setIconImages(icons);
+        }
         frame.setDefaultCloseOperation(WindowConstants.DO_NOTHING_ON_CLOSE);
         frame.addWindowListener(new WindowAdapter() {
             @Override

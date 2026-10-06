@@ -8,6 +8,17 @@ contain breaking changes.
 
 ## [Unreleased]
 
+### Added
+
+- Application icon: the window and taskbar now show the octopus icon, a multi-size `.ico` ships in
+  `src/main/resources/icons`, and `scripts/create-shortcut.bat` creates a Desktop shortcut with that icon that starts
+  `start-agent.bat`.
+
+### Changed
+
+- Logo and README banner use the application icon (`docs/assets/logo.png`); the social preview uses the new octopus
+  artwork.
+
 ## [0.1.2] - 2026-10-06
 
 > This release also contains the work that was developed as `0.1.1` (see the version history in `pom.xml`)
