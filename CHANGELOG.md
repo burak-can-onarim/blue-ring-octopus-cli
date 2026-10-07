@@ -8,6 +8,8 @@ contain breaking changes.
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-10-07
+
 ### Added
 
 - **Language selection.** The interface and the model's answers are available in English (default), Türkçe,
@@ -153,7 +155,8 @@ contain breaking changes.
 - `start-agent.bat` launcher for Windows with a model picker.
 - Windows archive with a bundled JRE.
 
-[Unreleased]: https://github.com/burak-can-onarim/blue-ring-octopus-cli/compare/v0.1.8...HEAD
+[Unreleased]: https://github.com/burak-can-onarim/blue-ring-octopus-cli/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/burak-can-onarim/blue-ring-octopus-cli/compare/v0.1.8...v0.2.0
 [0.1.8]: https://github.com/burak-can-onarim/blue-ring-octopus-cli/compare/v0.1.7...v0.1.8
 [0.1.7]: https://github.com/burak-can-onarim/blue-ring-octopus-cli/compare/v0.1.6...v0.1.7
 [0.1.6]: https://github.com/burak-can-onarim/blue-ring-octopus-cli/compare/v0.1.5...v0.1.6
