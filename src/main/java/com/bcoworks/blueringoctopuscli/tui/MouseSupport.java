@@ -7,10 +7,11 @@ import java.awt.Component;
 import java.awt.event.MouseAdapter;
 import java.awt.event.MouseEvent;
 import java.awt.event.MouseWheelEvent;
+import javax.swing.SwingUtilities;
 
 /**
  * Lanterna'nın Swing terminali fare olayı üretmez; bu sınıf pencerenin AWT fare olaylarını terminal hücrelerine
- * çevirip arayüze iletir. Yalnızca sol tık ve tekerlek desteklenir.
+ * çevirip arayüze iletir. Sol tuş (basma, sürükleme, bırakma, çoklu tık) ve tekerlek desteklenir.
  */
 final class MouseSupport {
 
@@ -18,7 +19,25 @@ final class MouseSupport {
      * Terminal hücresi (sütun, satır) cinsinden fare olayları. Herhangi bir thread'den çağrılabilir.
      */
     interface Handler {
+        /**
+         * The left button went down (kept for the simple "focus this field" clicks).
+         */
         void onClick(int column, int row);
+
+        /**
+         * The left button went down; clickCount is 2 for a double click, 3 for a triple click.
+         */
+        default void onPress(int column, int row, int clickCount) {
+        }
+
+        /**
+         * The mouse moved with the left button down. Cells above or left of the terminal are reported as 0.
+         */
+        default void onDrag(int column, int row) {
+        }
+
+        default void onRelease(int column, int row) {
+        }
 
         /**
          * @param lines negatif yukarı, pozitif aşağı
@@ -92,7 +111,24 @@ final class MouseSupport {
                     @Override
                     public void mousePressed(MouseEvent e) {
                         if (e.getButton() == MouseEvent.BUTTON1) {
-                            handler.onClick(cell(e.getX(), cellWidth), cell(e.getY(), cellHeight));
+                            int column = cell(e.getX(), cellWidth);
+                            int row = cell(e.getY(), cellHeight);
+                            handler.onClick(column, row);
+                            handler.onPress(column, row, e.getClickCount());
+                        }
+                    }
+
+                    @Override
+                    public void mouseDragged(MouseEvent e) {
+                        if (SwingUtilities.isLeftMouseButton(e)) {
+                            handler.onDrag(cell(e.getX(), cellWidth), cell(e.getY(), cellHeight));
+                        }
+                    }
+
+                    @Override
+                    public void mouseReleased(MouseEvent e) {
+                        if (e.getButton() == MouseEvent.BUTTON1) {
+                            handler.onRelease(cell(e.getX(), cellWidth), cell(e.getY(), cellHeight));
                         }
                     }
 
@@ -105,6 +141,7 @@ final class MouseSupport {
                     }
                 };
                 terminal.addMouseListener(listener);
+                terminal.addMouseMotionListener(listener);
                 terminal.addMouseWheelListener(listener);
                 return;
             }

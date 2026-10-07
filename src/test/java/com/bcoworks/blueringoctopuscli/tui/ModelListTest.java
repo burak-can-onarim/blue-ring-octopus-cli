@@ -81,4 +81,18 @@ class ModelListTest {
         assertEquals(6, ModelList.viewTop(6, 9, 4, 10));
         assertEquals(2, ModelList.viewTop(5, 2, 4, 10));
     }
+
+    @Test
+    void rowAtMapsAScreenRowToARowIndex() {
+        ModelList list = new ModelList();
+        list.setRows(List.of(
+                new Row("a", true, Installed.YES),
+                new Row("b", false, Installed.NO),
+                new Row("c", false, Installed.NO)));
+
+        assertEquals(0, list.rowAt(0));
+        assertEquals(2, list.rowAt(2));
+        assertEquals(-1, list.rowAt(3));
+        assertEquals(-1, list.rowAt(-1));
+    }
 }
