@@ -1,5 +1,6 @@
 package com.bcoworks.blueringoctopuscli.service;
 
+import com.bcoworks.blueringoctopuscli.i18n.Language;
 import com.bcoworks.blueringoctopuscli.i18n.Messages;
 import dev.langchain4j.data.message.AiMessage;
 import dev.langchain4j.data.message.ChatMessage;
@@ -13,11 +14,16 @@ import java.util.Map;
 
 /**
  * What the application asks of the model: review a file, write a class, write tests, document a file. Every call is one
- * system message and one user message built from the files under {@code prompts/} (see {@link PromptLibrary}), in the
- * language the user chose. The reviews come back as plain text; code, tests and documentation come back as the model
- * wrote them (the caller removes code fences).
+ * system message and one user message built from the files under {@code prompts/} (see {@link PromptLibrary}).
+ * <p>
+ * A small local model reasons best in English and cannot reliably do an analysis and write the report in another
+ * language in one go. So a review is always made in English; for any other language the application puts the frame
+ * of the review into that language (titles, severity, "line", "Consequence", "Fix") and the model only translates the
+ * free text in a second call. If the translation damages the frame, the localized English review is shown instead.
  */
 public class CodeAssistant {
+
+    private static final String FIRST_TITLE = "OVERVIEW";
 
     private final ChatLanguageModel model;
     private final PromptLibrary prompts;
@@ -30,15 +36,22 @@ public class CodeAssistant {
     }
 
     /**
-     * A review of one Java file: what it does, what is wrong (with line numbers and severity), a verdict. Section
-     * titles and labels come from the language files; the model writes the free text in the selected language.
+     * A review of one Java file as plain text: what it does, what is wrong (with line numbers and severity), a verdict.
      */
     public String analyze(String fileName, String code) {
         Map<String, String> variables = variables();
         variables.put("fileName", fileName);
         variables.put("code", ModelOutput.numberLines(code));
-        String answer = ModelOutput.stripNotes(ask("analyze", variables), messages.get("analysis.title.overview"));
-        return ModelOutput.toPlainText(answer);
+        String english = ModelOutput.toPlainText(ModelOutput.stripNotes(ask("analyze", variables), FIRST_TITLE));
+        if (messages.language() == Language.EN || english.isBlank()) {
+            return english;
+        }
+
+        String localized = ReviewLocalizer.localize(english, messages);
+        Map<String, String> translation = variables();
+        translation.put("text", localized);
+        String translated = ModelOutput.toPlainText(ask("translate", translation));
+        return ReviewLocalizer.keepsStructure(localized, translated, messages) ? translated : localized;
     }
 
     /**
@@ -87,22 +100,11 @@ public class CodeAssistant {
     }
 
     /**
-     * The values every prompt may use: the English name of the language (the instructions are in English) and the
-     * words of the review layout in that language, which the model copies instead of translating.
+     * The instructions are in English; the model is told the English name of the language to write in.
      */
     private Map<String, String> variables() {
         Map<String, String> variables = new HashMap<>();
         variables.put("language", messages.language().englishName());
-        variables.put("titleOverview", messages.get("analysis.title.overview"));
-        variables.put("titleFindings", messages.get("analysis.title.findings"));
-        variables.put("titleSummary", messages.get("analysis.title.summary"));
-        variables.put("noIssues", messages.get("analysis.noIssues"));
-        variables.put("severityHigh", messages.get("analysis.severity.high"));
-        variables.put("severityMedium", messages.get("analysis.severity.medium"));
-        variables.put("severityLow", messages.get("analysis.severity.low"));
-        variables.put("labelLine", messages.get("analysis.label.line"));
-        variables.put("labelConsequence", messages.get("analysis.label.consequence"));
-        variables.put("labelFix", messages.get("analysis.label.fix"));
         return variables;
     }
 }

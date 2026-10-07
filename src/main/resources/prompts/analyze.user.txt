@@ -6,4 +6,4 @@ File: {{fileName}}
 {{code}}
 </code>
 
-First the notes in English, then the answer in {{language}}. Everything after </notes> must be written in {{language}}, except the copied words.
+Write the notes first, then the answer, in English.

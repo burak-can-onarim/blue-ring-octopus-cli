@@ -9,7 +9,9 @@ import dev.langchain4j.model.chat.ChatLanguageModel;
 import dev.langchain4j.model.output.Response;
 import org.junit.jupiter.api.Test;
 
+import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Deque;
 import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -18,101 +20,128 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class CodeAssistantTest {
 
-    /** Records what is sent and answers with a fixed text. */
+    private static final String ENGLISH_REVIEW = "OVERVIEW\nIt builds queries.\n\nFINDINGS\n"
+            + "1. [HIGH] line 17 - SQL injection. Consequence: data theft. Fix: use prepared statements.\n\nSUMMARY\nDo not use it.";
+
+    /** Records every call and answers with the next prepared text (the last one is repeated). */
     static final class FakeModel implements ChatLanguageModel {
-        final List<ChatMessage> seen = new ArrayList<>();
-        String answer = "";
-        int calls;
+        final List<List<ChatMessage>> calls = new ArrayList<>();
+        private final Deque<String> answers = new ArrayDeque<>();
+
+        FakeModel(String... answers) {
+            this.answers.addAll(List.of(answers));
+        }
 
         @Override
         public Response<AiMessage> generate(List<ChatMessage> messages) {
-            calls++;
-            seen.clear();
-            seen.addAll(messages);
+            calls.add(List.copyOf(messages));
+            String answer = answers.size() > 1 ? answers.poll() : answers.isEmpty() ? "" : answers.peek();
             return Response.from(AiMessage.from(answer));
         }
 
-        String system() {
-            return ((SystemMessage) seen.get(0)).text();
+        String system(int call) {
+            return ((SystemMessage) calls.get(call).get(0)).text();
         }
 
-        String user() {
-            return ((UserMessage) seen.get(1)).singleText();
+        String user(int call) {
+            return ((UserMessage) calls.get(call).get(1)).singleText();
         }
     }
 
     private final PromptLibrary prompts = new PromptLibrary();
 
     @Test
-    void theReviewPromptCarriesNumberedCodeAndTheWordsOfTheSelectedLanguage() {
-        FakeModel model = new FakeModel();
-        model.answer = "OK";
-        CodeAssistant assistant = new CodeAssistant(model, prompts, new Messages("tr"));
+    void anEnglishReviewIsOneCallWithNumberedCode() {
+        FakeModel model = new FakeModel(ENGLISH_REVIEW);
 
-        assistant.analyze("A.java", "class A {\n}\n");
+        String review = new CodeAssistant(model, prompts, new Messages("en")).analyze("A.java", "class A {\n}\n");
 
-        assertTrue(model.system().contains("Turkish"));
-        for (String word : List.of("GENEL BAKIŞ", "BULGULAR", "SONUÇ", "YÜKSEK", "ORTA", "DÜŞÜK", "satır", "Sonuç", "Çözüm",
-                "Önemli bir sorun bulunamadı.")) {
-            assertTrue(model.system().contains(word), word);
-        }
-        assertTrue(model.user().contains("File: A.java"));
-        assertTrue(model.user().contains("1| class A {\n2| }"));
-        assertFalse(model.system().contains("{{"));
-        assertFalse(model.user().contains("{{"));
+        assertEquals(1, model.calls.size());
+        assertTrue(model.system(0).contains("OVERVIEW") && model.system(0).contains("<notes>"));
+        assertTrue(model.user(0).contains("File: A.java"));
+        assertTrue(model.user(0).contains("1| class A {\n2| }"));
+        assertEquals(ENGLISH_REVIEW, review);
     }
 
     @Test
-    void theReviewUsesEnglishWordsWhenEnglishIsSelected() {
-        FakeModel model = new FakeModel();
-        CodeAssistant assistant = new CodeAssistant(model, prompts, new Messages("en"));
+    void theNotesAndTheMarkdownNeverReachTheReader() {
+        FakeModel model = new FakeModel("<notes>\nline 1: a -> b -> REAL\n</notes>\n\n### OVERVIEW\nIt **does** `things`.");
 
-        assistant.analyze("A.java", "class A {}");
+        String review = new CodeAssistant(model, prompts, new Messages("en")).analyze("A.java", "class A {}");
 
-        assertTrue(model.system().contains("English"));
-        assertTrue(model.system().contains("OVERVIEW"));
-        assertTrue(model.system().contains("Consequence"));
+        assertEquals("OVERVIEW\nIt does things.", review);
     }
 
     @Test
-    void theReviewAnswerIsShownWithoutNotesAndWithoutMarkdown() {
-        FakeModel model = new FakeModel();
-        model.answer = "<notes>\nline 1: a -> b -> REAL\n</notes>\n\nOVERVIEW\nIt **does** `things`.\n\nFINDINGS\n"
-                + "1. [HIGH] line 3 - bad. Consequence: x. Fix: y.\n\nSUMMARY\nNo.";
-        CodeAssistant assistant = new CodeAssistant(model, prompts, new Messages("en"));
+    void anUnclosedNotesBlockStillYieldsTheAnswer() {
+        FakeModel model = new FakeModel("<notes>\n1. line 1: a -> NOT REAL\n1. line 1: a -> NOT REAL\n\nOVERVIEW\nIt works.");
 
-        String review = assistant.analyze("A.java", "class A {}");
-
-        assertEquals("OVERVIEW\nIt does things.\n\nFINDINGS\n1. [HIGH] line 3 - bad. Consequence: x. Fix: y.\n\nSUMMARY\nNo.", review);
+        assertEquals("OVERVIEW\nIt works.", new CodeAssistant(model, prompts, new Messages("en")).analyze("A.java", "class A {}"));
     }
 
     @Test
-    void anUnclosedNotesBlockStillYieldsTheAnswerInTheSelectedLanguage() {
-        FakeModel model = new FakeModel();
-        model.answer = "<notes>\n1. line 1: a -> NOT REAL\n1. line 1: a -> NOT REAL\n\nGENEL BAKIŞ\nBir şey.";
-        CodeAssistant assistant = new CodeAssistant(model, prompts, new Messages("tr"));
+    void anotherLanguageIsAnalysedInEnglishAndThenTranslatedAroundTheLocalizedFrame() {
+        String translated = "GENEL BAKIŞ\nSorgular oluşturur.\n\nBULGULAR\n"
+                + "1. [YÜKSEK] satır 17 - SQL enjeksiyonu. Sonuç: veri hırsızlığı. Çözüm: hazırlanmış sorgu kullanın.\n\nSONUÇ\nKullanmayın.";
+        FakeModel model = new FakeModel("<notes>x</notes>\n" + ENGLISH_REVIEW, translated);
 
-        assertEquals("GENEL BAKIŞ\nBir şey.", assistant.analyze("A.java", "class A {}"));
+        String review = new CodeAssistant(model, prompts, new Messages("tr")).analyze("A.java", "class A {\n}\n");
+
+        assertEquals(2, model.calls.size());
+        assertFalse(model.system(0).contains("Turkish"), "the analysis is made in English");
+        assertTrue(model.system(1).contains("Turkish"));
+        assertTrue(model.system(1).contains("SQL enjeksiyonu"), "the glossary is part of the translation prompt");
+        String sent = model.user(1);
+        assertTrue(sent.contains("GENEL BAKIŞ") && sent.contains("BULGULAR") && sent.contains("SONUÇ"), sent);
+        assertTrue(sent.contains("1. [YÜKSEK] satır 17 - SQL injection. Sonuç: data theft. Çözüm: use prepared statements."), sent);
+        assertEquals(translated, review);
+    }
+
+    @Test
+    void aBrokenTranslationFallsBackToTheLocalizedEnglishReview() {
+        FakeModel model = new FakeModel(ENGLISH_REVIEW, "Here is the translation: it is fine.");
+
+        String review = new CodeAssistant(model, prompts, new Messages("de")).analyze("A.java", "class A {}");
+
+        assertTrue(review.startsWith("ÜBERBLICK\nIt builds queries."), review);
+        assertTrue(review.contains("1. [HOCH] Zeile 17 - SQL injection. Folge: data theft. Lösung: use prepared statements."), review);
+        assertTrue(review.contains("FAZIT\nDo not use it."), review);
+    }
+
+    @Test
+    void aTranslationThatLosesAFindingFallsBackToo() {
+        FakeModel model = new FakeModel(ENGLISH_REVIEW, "APERÇU\nx\n\nCONSTATS\n\nCONCLUSION\ny");
+
+        String review = new CodeAssistant(model, prompts, new Messages("fr")).analyze("A.java", "class A {}");
+
+        assertTrue(review.contains("1. [ÉLEVÉ] ligne 17"), review);
+    }
+
+    @Test
+    void anEmptyAnalysisIsNotTranslated() {
+        FakeModel model = new FakeModel("");
+
+        String review = new CodeAssistant(model, prompts, new Messages("es")).analyze("A.java", "class A {}");
+
+        assertEquals("", review);
+        assertEquals(1, model.calls.size());
     }
 
     @Test
     void generatingCodeSendsTheRequestAndTheLanguageAndReturnsTheRawAnswer() {
-        FakeModel model = new FakeModel();
-        model.answer = "```java\nclass A {}\n```";
-        CodeAssistant assistant = new CodeAssistant(model, prompts, new Messages("de"));
+        FakeModel model = new FakeModel("```java\nclass A {}\n```");
 
-        String code = assistant.generateCode("a thread-safe cache {{x}}");
+        String code = new CodeAssistant(model, prompts, new Messages("de")).generateCode("a thread-safe cache {{x}}");
 
-        assertTrue(model.system().contains("German"));
-        assertTrue(model.user().contains("a thread-safe cache {{x}}"));
+        assertTrue(model.system(0).contains("German"));
+        assertTrue(model.user(0).contains("a thread-safe cache {{x}}"));
         assertEquals("```java\nclass A {}\n```", code);
     }
 
     @Test
     void testsDocumentationAndInventoryGetTheFileAsItIs() {
         for (String kind : List.of("tests", "document", "inventory")) {
-            FakeModel model = new FakeModel();
-            model.answer = "answer";
+            FakeModel model = new FakeModel("answer");
             CodeAssistant assistant = new CodeAssistant(model, prompts, new Messages("fr"));
 
             String result = switch (kind) {
@@ -122,19 +151,18 @@ class CodeAssistantTest {
             };
 
             assertEquals("answer", result, kind);
-            assertTrue(model.system().contains("French"), kind);
-            assertTrue(model.user().contains("File: Money.java"), kind);
-            assertTrue(model.user().contains("class Money {\n}"), kind);
-            assertFalse(model.user().contains("1| "), kind + " must not number the lines");
+            assertTrue(model.system(0).contains("French"), kind);
+            assertTrue(model.user(0).contains("File: Money.java"), kind);
+            assertTrue(model.user(0).contains("class Money {\n}"), kind);
+            assertFalse(model.user(0).contains("1| "), kind + " must not number the lines");
         }
     }
 
     @Test
     void anEmptyAnswerStaysEmptyAndTheModelIsAskedOnce() {
         FakeModel model = new FakeModel();
-        CodeAssistant assistant = new CodeAssistant(model, prompts, new Messages("en"));
 
-        assertEquals("", assistant.generateCode("anything"));
-        assertEquals(1, model.calls);
+        assertEquals("", new CodeAssistant(model, prompts, new Messages("en")).generateCode("anything"));
+        assertEquals(1, model.calls.size());
     }
 }

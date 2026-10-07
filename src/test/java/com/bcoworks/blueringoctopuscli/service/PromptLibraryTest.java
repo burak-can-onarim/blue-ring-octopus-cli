@@ -13,11 +13,6 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class PromptLibraryTest {
 
-    /** The values CodeAssistant supplies for the layout of a review. */
-    private static final Set<String> REVIEW_LAYOUT = Set.of(
-            "titleOverview", "titleFindings", "titleSummary", "noIssues", "severityHigh", "severityMedium",
-            "severityLow", "labelLine", "labelConsequence", "labelFix");
-
     private final PromptLibrary prompts = new PromptLibrary();
 
     private static Set<String> allowed(String... extra) {
@@ -29,33 +24,44 @@ class PromptLibraryTest {
     @Test
     void everyPromptExistsAndOnlyUsesPlaceholdersTheAssistantFills() {
         Map<String, Set<String>> expected = Map.of(
-                "analyze.system", allowedWith(REVIEW_LAYOUT),
-                "analyze.user", allowedWith(Set.of("fileName", "code")),
+                "analyze.system", Set.of(),
+                "analyze.user", Set.of("fileName", "code"),
+                "translate.system", Set.of("language"),
+                "translate.user", Set.of("text"),
                 "generate.system", allowed(),
                 "generate.user", allowed("prompt"),
                 "tests.system", allowed(),
                 "tests.user", allowed("fileName", "code"),
                 "document.system", allowed(),
-                "document.user", allowed("fileName", "code"),
-                "inventory.system", allowed(),
-                "inventory.user", allowed("fileName", "code"));
+                "document.user", allowed("fileName", "code"));
 
         expected.forEach((name, allowedNames) -> {
             Set<String> used = PromptLibrary.placeholders(prompts.template(name));
             assertTrue(allowedNames.containsAll(used), name + " uses " + used + " but only " + allowedNames + " are filled");
         });
+        assertTrue(allowed("fileName", "code").containsAll(PromptLibrary.placeholders(prompts.template("inventory.user"))));
+        assertTrue(allowed().containsAll(PromptLibrary.placeholders(prompts.template("inventory.system"))));
     }
 
     @Test
-    void theAnalysisPromptUsesEveryWordOfTheReviewLayout() {
-        Set<String> used = PromptLibrary.placeholders(prompts.template("analyze.system"));
-
-        assertTrue(used.containsAll(REVIEW_LAYOUT), "unused: " + REVIEW_LAYOUT.stream().filter(n -> !used.contains(n)).toList());
+    void theAnalysisIsAlwaysMadeInEnglishSoItsPromptHasNoLanguageOrLayoutPlaceholders() {
+        assertTrue(PromptLibrary.placeholders(prompts.template("analyze.system")).isEmpty());
+        assertTrue(prompts.template("analyze.system").contains("OVERVIEW"));
+        assertTrue(prompts.template("analyze.system").contains("No significant issues found."));
     }
 
     @Test
-    void everySystemPromptTellsTheModelWhichLanguageToWriteIn() {
-        for (String name : List.of("analyze", "generate", "tests", "document", "inventory")) {
+    void theTranslationPromptHasAGlossaryLineForEveryNonEnglishLanguage() {
+        String translate = prompts.template("translate.system");
+
+        for (String language : List.of("Turkish", "German", "French", "Italian", "Spanish")) {
+            assertTrue(translate.contains("\n" + language + ": SQL injection = "), language);
+        }
+    }
+
+    @Test
+    void everySystemPromptExceptTheAnalysisTellsTheModelWhichLanguageToWriteIn() {
+        for (String name : List.of("translate", "generate", "tests", "document", "inventory")) {
             assertTrue(PromptLibrary.placeholders(prompts.template(name + ".system")).contains("language"), name);
         }
     }
@@ -70,7 +76,7 @@ class PromptLibraryTest {
 
     @Test
     void thePromptsStayShortEnoughForASmallContextWindow() {
-        for (String name : List.of("analyze", "generate", "tests", "document", "inventory")) {
+        for (String name : List.of("analyze", "translate", "generate", "tests", "document", "inventory")) {
             int words = prompts.template(name + ".system").split("\\s+").length;
             assertTrue(words <= 700, name + ".system has " + words + " words");
         }
@@ -118,22 +124,16 @@ class PromptLibraryTest {
     @Test
     void renderedPromptsHaveNoPlaceholderLeft() {
         Map<String, String> values = new java.util.HashMap<>();
-        for (String name : allowedWith(REVIEW_LAYOUT)) {
-            values.put(name, "x");
-        }
+        values.put("language", "German");
         values.put("fileName", "A.java");
         values.put("code", "class A {}");
         values.put("prompt", "something");
+        values.put("text", "a review");
 
-        for (String name : List.of("analyze", "generate", "tests", "document", "inventory")) {
+        for (String name : List.of("analyze", "translate", "generate", "tests", "document", "inventory")) {
             assertFalse(prompts.render(name + ".system", values).contains("{{"), name);
             assertFalse(prompts.render(name + ".user", values).contains("{{"), name);
         }
     }
 
-    private static Set<String> allowedWith(Set<String> names) {
-        Set<String> result = new java.util.HashSet<>(names);
-        result.add("language");
-        return result;
-    }
 }
