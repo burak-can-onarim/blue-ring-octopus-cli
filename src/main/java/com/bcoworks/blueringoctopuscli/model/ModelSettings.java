@@ -63,10 +63,26 @@ public class ModelSettings {
         }
         for (AppMode mode : AppMode.values()) {
             String value = props.getProperty(mode.name());
+            if (value == null || value.isBlank()) {
+                value = props.getProperty(legacyName(mode)); // saved before the modes got English names
+            }
             if (value != null && !value.isBlank()) {
                 selected.put(mode, value.strip());
             }
         }
+    }
+
+    /**
+     * The name a mode had in the settings file before the constants were renamed to English. Read, never written,
+     * so a model chosen with an older version is not lost.
+     */
+    private static String legacyName(AppMode mode) {
+        return switch (mode) {
+            case CODE_ANALYSIS -> "KOD_ANALIZI";
+            case CODE_GENERATION -> "KOD_GENERATE";
+            case DOCUMENTATION -> "DOKUMAN_HAZIRLAMA";
+            case UNIT_TESTS -> "BIRIM_TEST";
+        };
     }
 
     private synchronized void save() {

@@ -29,7 +29,7 @@ public class AnalysisModeHandler implements IModeHandler {
 
     @Override
     public AppMode mode() {
-        return AppMode.KOD_ANALIZI;
+        return AppMode.CODE_ANALYSIS;
     }
 
     @Override
@@ -53,7 +53,7 @@ public class AnalysisModeHandler implements IModeHandler {
         int total = files.size();
         console.println(messages.get("analysis.found", total, target));
 
-        ICodeAnalyzerService service = ai.forMode(AppMode.KOD_ANALIZI);
+        ICodeAnalyzerService service = ai.forMode(AppMode.CODE_ANALYSIS);
 
         for (int i = 0; i < total; i++) {
             if (console.isCancelled()) {

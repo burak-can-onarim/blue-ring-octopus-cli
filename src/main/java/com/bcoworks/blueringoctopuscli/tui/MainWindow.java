@@ -999,7 +999,7 @@ final class MainWindow implements MouseSupport.Handler {
             closeApplication();
             return;
         }
-        if (prompt.isEmpty() && mode != AppMode.KOD_ANALIZI) {
+        if (prompt.isEmpty() && mode != AppMode.CODE_ANALYSIS) {
             notice(" " + messages.get("notice.emptyPrompt"), OctopusTheme.YELLOW);
             return;
         }
@@ -1011,7 +1011,7 @@ final class MainWindow implements MouseSupport.Handler {
         promptHistory.add(prompt);
         pathHistory.add(path);
         promptInput.setText("");
-        if (mode == AppMode.KOD_GENERATE) {
+        if (mode == AppMode.CODE_GENERATION) {
             pathInput.setText(""); // aynı dosyaya ikinci kez yazma hatasını önler
         }
         lastOutput.setLength(0);
@@ -1031,8 +1031,8 @@ final class MainWindow implements MouseSupport.Handler {
 
     private String describe(AppMode mode, String prompt, String path) {
         return switch (mode) {
-            case KOD_ANALIZI -> path.isEmpty() ? messages.get("describe.workingDir") : path;
-            case KOD_GENERATE -> path.isEmpty() ? prompt : prompt + "  →  " + path;
+            case CODE_ANALYSIS -> path.isEmpty() ? messages.get("describe.workingDir") : path;
+            case CODE_GENERATION -> path.isEmpty() ? prompt : prompt + "  →  " + path;
             default -> prompt;
         };
     }

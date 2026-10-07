@@ -13,6 +13,6 @@ class DocumentModeHandler extends PlannedModeHandler {
 
     @Override
     public AppMode mode() {
-        return AppMode.DOKUMAN_HAZIRLAMA;
+        return AppMode.DOCUMENTATION;
     }
 }
