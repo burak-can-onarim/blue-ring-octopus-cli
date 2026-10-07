@@ -143,9 +143,10 @@ path, and <kbd>Enter</kbd> runs it.
 | <kbd>Ctrl</kbd>+<kbd>L</kbd> | Open the model panel for the current mode |
 | <kbd>Ctrl</kbd>+<kbd>G</kbd> | Choose the interface language (the model answers in it too) |
 | <kbd>Ctrl</kbd>+<kbd>V</kbd> / <kbd>Shift</kbd>+<kbd>Insert</kbd> | Paste from the clipboard |
-| <kbd>Ctrl</kbd>+<kbd>C</kbd> | Copy the last output to the clipboard |
+| <kbd>Ctrl</kbd>+<kbd>C</kbd> | Copy the selected text, or the last output when nothing is selected |
 | <kbd>PgUp</kbd> / <kbd>PgDn</kbd>, mouse wheel | Scroll the conversation (the wheel also scrolls a long prompt) |
-| Left click | Focus the Prompt or Path field (and place the caret) |
+| Left click | Focus the Prompt or Path field (and place the caret); on the Mode arrows `‹` `›` switch the mode; on the Model panel focus it (a double click on a model chooses it) |
+| Drag, double or triple click | Select text, a word or a line in the Output box |
 | <kbd>Esc</kbd> | Cancel the running task, or ask to exit |
 
 ### One-shot commands

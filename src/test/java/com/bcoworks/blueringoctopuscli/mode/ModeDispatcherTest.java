@@ -44,10 +44,10 @@ class ModeDispatcherTest {
         ModeDispatcher dispatcher = new ModeDispatcher(List.copyOf(handlers));
         ModeRequest request = new ModeRequest("merhaba", "");
 
-        dispatcher.dispatch(AppMode.KOD_GENERATE, request, IModeConsole.stdout());
+        dispatcher.dispatch(AppMode.CODE_GENERATION, request, IModeConsole.stdout());
 
         for (RecordingHandler handler : handlers) {
-            List<ModeRequest> expected = handler.mode == AppMode.KOD_GENERATE ? List.of(request) : List.of();
+            List<ModeRequest> expected = handler.mode == AppMode.CODE_GENERATION ? List.of(request) : List.of();
             assertEquals(expected, handler.requests, handler.mode.name());
         }
     }
@@ -63,7 +63,7 @@ class ModeDispatcherTest {
     @Test
     void failsWhenAModeHasTwoHandlers() {
         List<RecordingHandler> handlers = handlersForAllModes();
-        handlers.add(new RecordingHandler(AppMode.KOD_ANALIZI));
+        handlers.add(new RecordingHandler(AppMode.CODE_ANALYSIS));
 
         assertThrows(IllegalStateException.class, () -> new ModeDispatcher(List.copyOf(handlers)));
     }

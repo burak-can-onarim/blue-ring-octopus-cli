@@ -13,6 +13,6 @@ class UnitTestModeHandler extends PlannedModeHandler {
 
     @Override
     public AppMode mode() {
-        return AppMode.BIRIM_TEST;
+        return AppMode.UNIT_TESTS;
     }
 }

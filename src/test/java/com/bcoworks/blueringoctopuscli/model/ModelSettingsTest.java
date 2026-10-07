@@ -10,6 +10,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class ModelSettingsTest {
@@ -34,49 +35,85 @@ class ModelSettingsTest {
     void selectionIsPerMode() {
         ModelSettings settings = new ModelSettings("qwen2.5-coder", file());
 
-        settings.select(AppMode.KOD_GENERATE, "llama3.1");
+        settings.select(AppMode.CODE_GENERATION, "llama3.1");
 
-        assertEquals("llama3.1", settings.modelFor(AppMode.KOD_GENERATE));
-        assertEquals("qwen2.5-coder", settings.modelFor(AppMode.KOD_ANALIZI));
+        assertEquals("llama3.1", settings.modelFor(AppMode.CODE_GENERATION));
+        assertEquals("qwen2.5-coder", settings.modelFor(AppMode.CODE_ANALYSIS));
     }
 
     @Test
     void selectionSurvivesRestart() {
-        new ModelSettings("qwen2.5-coder", file()).select(AppMode.KOD_ANALIZI, " codellama ");
+        new ModelSettings("qwen2.5-coder", file()).select(AppMode.CODE_ANALYSIS, " codellama ");
 
         ModelSettings reloaded = new ModelSettings("qwen2.5-coder", file());
 
-        assertEquals("codellama", reloaded.modelFor(AppMode.KOD_ANALIZI));
-        assertEquals("qwen2.5-coder", reloaded.modelFor(AppMode.KOD_GENERATE));
+        assertEquals("codellama", reloaded.modelFor(AppMode.CODE_ANALYSIS));
+        assertEquals("qwen2.5-coder", reloaded.modelFor(AppMode.CODE_GENERATION));
     }
 
     @Test
     void blankOrNullSelectionIsIgnored() {
         ModelSettings settings = new ModelSettings("qwen2.5-coder", file());
 
-        settings.select(AppMode.KOD_ANALIZI, null);
-        settings.select(AppMode.KOD_ANALIZI, "   ");
+        settings.select(AppMode.CODE_ANALYSIS, null);
+        settings.select(AppMode.CODE_ANALYSIS, "   ");
 
-        assertEquals("qwen2.5-coder", settings.modelFor(AppMode.KOD_ANALIZI));
+        assertEquals("qwen2.5-coder", settings.modelFor(AppMode.CODE_ANALYSIS));
         assertTrue(Files.notExists(file()));
     }
 
     @Test
     void savedSelectionWinsOverNewDefault() {
-        new ModelSettings("qwen2.5-coder", file()).select(AppMode.KOD_ANALIZI, "llama3.1");
+        new ModelSettings("qwen2.5-coder", file()).select(AppMode.CODE_ANALYSIS, "llama3.1");
 
-        assertEquals("llama3.1", new ModelSettings("baska-model", file()).modelFor(AppMode.KOD_ANALIZI));
+        assertEquals("llama3.1", new ModelSettings("baska-model", file()).modelFor(AppMode.CODE_ANALYSIS));
     }
 
     @Test
     void ignoresUnknownKeysAndBlankValuesInFile() throws IOException {
         Files.createDirectories(file().getParent());
-        Files.writeString(file(), "ESKI_MOD=x\nKOD_ANALIZI=\nKOD_GENERATE=llama3.1\n", StandardCharsets.UTF_8);
+        Files.writeString(file(), "UNKNOWN_MODE=x\nCODE_ANALYSIS=\nCODE_GENERATION=llama3.1\n", StandardCharsets.UTF_8);
 
         ModelSettings settings = new ModelSettings("qwen2.5-coder", file());
 
-        assertEquals("qwen2.5-coder", settings.modelFor(AppMode.KOD_ANALIZI));
-        assertEquals("llama3.1", settings.modelFor(AppMode.KOD_GENERATE));
+        assertEquals("qwen2.5-coder", settings.modelFor(AppMode.CODE_ANALYSIS));
+        assertEquals("llama3.1", settings.modelFor(AppMode.CODE_GENERATION));
+    }
+
+    @Test
+    void readsChoicesSavedUnderTheOldTurkishModeNames() throws IOException {
+        Files.createDirectories(file().getParent());
+        Files.writeString(file(), "KOD_ANALIZI=llama3.1\nKOD_GENERATE=codellama\nDOKUMAN_HAZIRLAMA=a\nBIRIM_TEST=b\n",
+                StandardCharsets.UTF_8);
+
+        ModelSettings settings = new ModelSettings("qwen2.5-coder", file());
+
+        assertEquals("llama3.1", settings.modelFor(AppMode.CODE_ANALYSIS));
+        assertEquals("codellama", settings.modelFor(AppMode.CODE_GENERATION));
+        assertEquals("a", settings.modelFor(AppMode.DOCUMENTATION));
+        assertEquals("b", settings.modelFor(AppMode.UNIT_TESTS));
+    }
+
+    @Test
+    void aChoiceUnderTheCurrentNameBeatsTheOldName() throws IOException {
+        Files.createDirectories(file().getParent());
+        Files.writeString(file(), "KOD_ANALIZI=old\nCODE_ANALYSIS=new\n", StandardCharsets.UTF_8);
+
+        assertEquals("new", new ModelSettings("qwen2.5-coder", file()).modelFor(AppMode.CODE_ANALYSIS));
+    }
+
+    @Test
+    void savingWritesTheCurrentNames() throws IOException {
+        Files.createDirectories(file().getParent());
+        Files.writeString(file(), "KOD_ANALIZI=llama3.1\n", StandardCharsets.UTF_8);
+        ModelSettings settings = new ModelSettings("qwen2.5-coder", file());
+
+        settings.select(AppMode.CODE_GENERATION, "codellama");
+
+        String saved = Files.readString(file());
+        assertTrue(saved.contains("CODE_ANALYSIS=llama3.1"), saved);
+        assertTrue(saved.contains("CODE_GENERATION=codellama"), saved);
+        assertFalse(saved.contains("KOD_"), saved);
     }
 
     @Test
@@ -86,6 +123,6 @@ class ModelSettingsTest {
 
         ModelSettings settings = new ModelSettings("qwen2.5-coder", file());
 
-        assertEquals("qwen2.5-coder", settings.modelFor(AppMode.KOD_ANALIZI));
+        assertEquals("qwen2.5-coder", settings.modelFor(AppMode.CODE_ANALYSIS));
     }
 }

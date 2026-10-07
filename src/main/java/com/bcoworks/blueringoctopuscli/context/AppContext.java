@@ -8,5 +8,5 @@ import org.springframework.stereotype.Component;
 @Setter
 @Component
 public class AppContext {
-    private AppMode currentMode = AppMode.KOD_ANALIZI;
+    private AppMode currentMode = AppMode.CODE_ANALYSIS;
 }

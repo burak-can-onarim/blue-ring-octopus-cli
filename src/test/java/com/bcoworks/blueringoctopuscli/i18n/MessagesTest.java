@@ -200,7 +200,7 @@ class MessagesTest {
 
         messages.setLanguage(Language.TR);
         assertEquals("1 dosya bulundu: src", messages.get("analysis.found", 1, "src"));
-        assertEquals("Kod Analizi", messages.modeName(AppMode.KOD_ANALIZI));
+        assertEquals("Kod Analizi", messages.modeName(AppMode.CODE_ANALYSIS));
     }
 
     @Test

@@ -104,10 +104,10 @@ classDiagram
     direction LR
     class AppMode {
         <<enum>>
-        KOD_ANALIZI
-        KOD_GENERATE
-        DOKUMAN_HAZIRLAMA
-        BIRIM_TEST
+        CODE_ANALYSIS
+        CODE_GENERATION
+        DOCUMENTATION
+        UNIT_TESTS
         +next() AppMode
         +previous() AppMode
     }
@@ -166,7 +166,7 @@ sequenceDiagram
     A->>A: resolve path, check it exists
     A->>S: scanJavaFiles(path)
     S-->>A: .java files (ignored folders removed)
-    A->>R: forMode(KOD_ANALIZI)
+    A->>R: forMode(CODE_ANALYSIS)
     R-->>A: ICodeAnalyzerService for the selected model
     loop every file
         A->>A: cancelled? skip files over 64 KB or blank

@@ -30,6 +30,6 @@ class AppModeTest {
 
     @Test
     void contextStartsInCodeAnalysisMode() {
-        assertEquals(AppMode.KOD_ANALIZI, new AppContext().getCurrentMode());
+        assertEquals(AppMode.CODE_ANALYSIS, new AppContext().getCurrentMode());
     }
 }

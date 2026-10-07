@@ -48,6 +48,14 @@ final class ModelList extends AbstractInteractableComponent<ModelList> {
         return cursor;
     }
 
+    /**
+     * The row shown y rows below the top of this list, or -1 if there is none there.
+     */
+    int rowAt(int y) {
+        int index = top + y;
+        return y >= 0 && index < rows.size() ? index : -1;
+    }
+
     void setCursor(int index) {
         cursor = clampCursor(index);
         invalidate();

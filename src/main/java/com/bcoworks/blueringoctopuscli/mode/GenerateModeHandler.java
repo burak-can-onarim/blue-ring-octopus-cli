@@ -38,7 +38,7 @@ public class GenerateModeHandler implements IModeHandler {
 
     @Override
     public AppMode mode() {
-        return AppMode.KOD_GENERATE;
+        return AppMode.CODE_GENERATION;
     }
 
     @Override
@@ -58,7 +58,7 @@ public class GenerateModeHandler implements IModeHandler {
         }
 
         console.step(messages.get("generate.working"));
-        String raw = ai.forMode(AppMode.KOD_GENERATE).generateCode(messages.language().englishName(), prompt);
+        String raw = ai.forMode(AppMode.CODE_GENERATION).generateCode(messages.language().englishName(), prompt);
         if (console.isCancelled()) {
             return; // iptal edildi: dosya yazılmaz
         }

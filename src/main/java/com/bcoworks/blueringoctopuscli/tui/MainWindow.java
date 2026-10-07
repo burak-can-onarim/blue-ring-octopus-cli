@@ -64,6 +64,7 @@ final class MainWindow implements MouseSupport.Handler {
 
     private final BasicWindow window = new BasicWindow("Blue Ring Octopus CLI");
     private final Panel bannerPanel = new Panel(linear(Direction.VERTICAL, 0));
+    private final BannerView bannerView = new BannerView();
     private final DialogView dialog = new DialogView();
     private Border dialogBox;
     private Border promptBox;
@@ -77,7 +78,9 @@ final class MainWindow implements MouseSupport.Handler {
     private final PromptArea promptInput = new PromptArea();
     private final TextBox pathInput = new TextBox(new TerminalSize(40, 1));
     private final Label hintLabel = new Label("");
-    private final Label modeLabel = new Label("");
+    private final Label modePrev = new Label(" ‹ ");
+    private final Label modeName = new Label("");
+    private final Label modeNext = new Label(" › ");
     private final Label stepLabel = new Label("");
     private final Label progressLabel = new Label(BLANK_PROGRESS);
 
@@ -89,6 +92,7 @@ final class MainWindow implements MouseSupport.Handler {
     private final InputHistory promptHistory = new InputHistory();
     private final InputHistory pathHistory = new InputHistory();
     private final AtomicBoolean dialogOpen = new AtomicBoolean(false);
+    private boolean selecting; // a text selection is being dragged in the output box (GUI thread only)
     private final StringBuilder lastOutput = new StringBuilder(); // yalnızca UI thread'i dokunur
 
     private final AtomicBoolean busy = new AtomicBoolean(false);
@@ -103,7 +107,7 @@ final class MainWindow implements MouseSupport.Handler {
     private volatile int progressTotal;
     private volatile long noticeUntil;
     private ScheduledFuture<?> spinnerTask;
-    private List<String> shownBanner = List.of();
+    private BannerArt.Banner shownBanner;
 
     /**
      * Çalışan tek bir işlem. İptal edilince çıktıları yok sayılır, arayüz hemen serbest kalır.
@@ -229,6 +233,90 @@ final class MainWindow implements MouseSupport.Handler {
     }
 
     /**
+     * Left button down. In the output box it starts a text selection (double click: a word, triple click: a line);
+     * on a mode arrow it switches the mode; on the model panel it focuses the panel and, on a row, moves the cursor
+     * there (a double click on a row chooses that model). Any other press clears the selection.
+     */
+    @Override
+    public void onPress(int column, int row, int clickCount) {
+        ui(() -> {
+            if (dialogOpen.get()) {
+                return;
+            }
+            if (isOver(dialog, true, column, row)) {
+                int[] at = originOf(dialog, true);
+                if (clickCount >= 3) {
+                    dialog.selectLineAt(row - at[1]);
+                    selecting = false;
+                } else if (clickCount == 2) {
+                    dialog.selectWordAt(row - at[1], column - at[0]);
+                    selecting = false;
+                } else {
+                    dialog.startSelection(row - at[1], column - at[0]);
+                    selecting = true;
+                }
+                return;
+            }
+            dialog.clearSelection();
+            selecting = false;
+            if (isOver(modePrev, true, column, row)) {
+                switchMode(false);
+            } else if (isOver(modeNext, true, column, row)) {
+                switchMode(true);
+            } else if (isOverBox(modelBox, column, row)) {
+                clickModelPanel(column, row, clickCount);
+            }
+        });
+    }
+
+    /**
+     * Dragging past the top or bottom of the output box scrolls it one line per mouse movement.
+     */
+    @Override
+    public void onDrag(int column, int row) {
+        ui(() -> {
+            if (!selecting || dialogOpen.get()) {
+                return;
+            }
+            int[] at = originOf(dialog, true);
+            int rowInBox = row - at[1];
+            if (rowInBox < 0) {
+                dialog.scroll(-1);
+            } else if (rowInBox >= dialog.getSize().getRows()) {
+                dialog.scroll(1);
+            }
+            dialog.extendSelection(rowInBox, column - at[0]);
+        });
+    }
+
+    @Override
+    public void onRelease(int column, int row) {
+        ui(() -> {
+            if (selecting) {
+                selecting = false;
+                if (!dialog.hasSelection()) {
+                    dialog.clearSelection();
+                }
+            }
+        });
+    }
+
+    private void clickModelPanel(int column, int row, int clickCount) {
+        if (!focusedOnModels()) {
+            openModelPanel();
+        }
+        if (isOver(modelList, true, column, row)) {
+            int index = modelList.rowAt(row - originOf(modelList, true)[1]);
+            if (index >= 0) {
+                modelList.setCursor(index);
+                if (clickCount >= 2) {
+                    chooseSelectedModel();
+                }
+            }
+        }
+    }
+
+    /**
      * Bileşenin ekranda çizildiği sol-üst hücre (sütun, satır). Lanterna'nın global konumları çizimden sapar, bkz.
      * {@link MouseSupport#visualOrigin}. Border'ın kendisi için insideBorder=false, içindekiler için true verilir.
      */
@@ -278,12 +366,13 @@ final class MainWindow implements MouseSupport.Handler {
         // --- üst: banner (tam genişlik)
         Panel bannerHolder = new Panel(linear(Direction.VERTICAL, 0));
         bannerPanel.setLayoutData(LinearLayout.createLayoutData(LinearLayout.Alignment.Center));
+        bannerPanel.addComponent(bannerView);
         bannerHolder.addComponent(bannerPanel);
         Border bannerBox = bannerHolder.withBorder(Borders.singleLine());
         bannerBox.setLayoutData(fill());
 
         // Diyalog: istekler ve yanıtlar. Prompt girişinden ayrı bir kutudur.
-        dialogBox = titled(dialog, messages.get("box.dialog"));
+        dialogBox = titled(dialog, messages.get("box.output"));
         dialogBox.setLayoutData(grow());
 
         // Prompt: ipucu satırı + çok satırlı giriş
@@ -310,8 +399,14 @@ final class MainWindow implements MouseSupport.Handler {
         mainRow.addComponent(buildModelPanel());
 
         // --- alt satır: mod bilgisi / loading ve step / aktif model
-        modeLabel.setForegroundColor(OctopusTheme.MAUVE);
-        modeBox = titled(modeLabel, messages.get("box.mode"));
+        modePrev.setForegroundColor(OctopusTheme.BLUE);
+        modeNext.setForegroundColor(OctopusTheme.BLUE);
+        modeName.setForegroundColor(OctopusTheme.MAUVE);
+        Panel modeRow = new Panel(linear(Direction.HORIZONTAL, 0));
+        modeRow.addComponent(modePrev);
+        modeRow.addComponent(modeName);
+        modeRow.addComponent(modeNext);
+        modeBox = titled(modeRow, messages.get("box.mode"));
 
         stepLabel.setLayoutData(grow());
         progressLabel.setForegroundColor(OctopusTheme.BLUE);
@@ -398,31 +493,12 @@ final class MainWindow implements MouseSupport.Handler {
 
     private void applyBanner(TerminalSize size) {
         int available = size.getColumns() - 2 - 2; // uygulama çerçevesi + banner kutusu
-        List<String> lines = banner.choose(available, size.getRows());
-        if (lines.equals(shownBanner)) {
+        BannerArt.Banner chosen = banner.choose(available, size.getRows());
+        if (chosen.equals(shownBanner)) {
             return;
         }
-        shownBanner = lines;
-        bannerPanel.removeAllComponents();
-        for (int i = 0; i < lines.size(); i++) {
-            Label label = new Label(lines.get(i));
-            label.setForegroundColor(bannerColor(i, lines.size()));
-            bannerPanel.addComponent(label);
-        }
-    }
-
-    /**
-     * Sanat satırlarında mavi → mor geçiş, son satır (alt başlık) soluk.
-     */
-    private static TextColor bannerColor(int index, int count) {
-        if (count == 1) {
-            return OctopusTheme.BLUE;
-        }
-        if (index == count - 1) {
-            return OctopusTheme.MUTED;
-        }
-        double t = count <= 2 ? 0 : index / (double) (count - 2);
-        return OctopusTheme.lerp(OctopusTheme.BLUE, OctopusTheme.MAUVE, t);
+        shownBanner = chosen;
+        bannerView.setBanner(chosen);
     }
 
     // ---------------------------------------------------------------- input
@@ -534,6 +610,8 @@ final class MainWindow implements MouseSupport.Handler {
                     return false;
                 }
             }
+            case PageUp -> dialog.pageUp();
+            case PageDown -> dialog.pageDown();
             case ArrowUp -> moveModelCursor(-1);
             case ArrowDown -> moveModelCursor(1);
             case Enter -> chooseSelectedModel();
@@ -592,7 +670,7 @@ final class MainWindow implements MouseSupport.Handler {
 
     private void refreshMode() {
         AppMode mode = appContext.getCurrentMode();
-        modeLabel.setText(String.format("%-" + modeTextWidth() + "s", "‹ " + messages.modeName(mode) + " ›"));
+        modeName.setText(center(messages.modeName(mode), modeNameWidth()));
         refreshModelPanel(true);
         refreshHint();
     }
@@ -646,6 +724,16 @@ final class MainWindow implements MouseSupport.Handler {
     }
 
     private void copyLastOutput() {
+        if (dialog.hasSelection()) {
+            String selected = dialog.selectedText();
+            if (ClipboardSupport.write(selected)) {
+                dialog.clearSelection();
+                notice(" " + messages.get("notice.selectionCopied", selected.length()), OctopusTheme.GREEN);
+            } else {
+                notice(" " + messages.get("notice.clipboardFailed"), OctopusTheme.YELLOW);
+            }
+            return;
+        }
         String text = lastOutput.toString().strip();
         if (text.isEmpty()) {
             notice(" " + messages.get("notice.nothingToCopy"), OctopusTheme.YELLOW);
@@ -911,7 +999,7 @@ final class MainWindow implements MouseSupport.Handler {
             closeApplication();
             return;
         }
-        if (prompt.isEmpty() && mode != AppMode.KOD_ANALIZI) {
+        if (prompt.isEmpty() && mode != AppMode.CODE_ANALYSIS) {
             notice(" " + messages.get("notice.emptyPrompt"), OctopusTheme.YELLOW);
             return;
         }
@@ -923,7 +1011,7 @@ final class MainWindow implements MouseSupport.Handler {
         promptHistory.add(prompt);
         pathHistory.add(path);
         promptInput.setText("");
-        if (mode == AppMode.KOD_GENERATE) {
+        if (mode == AppMode.CODE_GENERATION) {
             pathInput.setText(""); // aynı dosyaya ikinci kez yazma hatasını önler
         }
         lastOutput.setLength(0);
@@ -943,8 +1031,8 @@ final class MainWindow implements MouseSupport.Handler {
 
     private String describe(AppMode mode, String prompt, String path) {
         return switch (mode) {
-            case KOD_ANALIZI -> path.isEmpty() ? messages.get("describe.workingDir") : path;
-            case KOD_GENERATE -> path.isEmpty() ? prompt : prompt + "  →  " + path;
+            case CODE_ANALYSIS -> path.isEmpty() ? messages.get("describe.workingDir") : path;
+            case CODE_GENERATION -> path.isEmpty() ? prompt : prompt + "  →  " + path;
             default -> prompt;
         };
     }
@@ -1004,7 +1092,7 @@ final class MainWindow implements MouseSupport.Handler {
     }
 
     private String pathTitle() {
-        return messages.get("box.path", shorten(System.getProperty("user.dir")));
+        return messages.get("box.path");
     }
 
     /**
@@ -1050,11 +1138,17 @@ final class MainWindow implements MouseSupport.Handler {
                 new KeyHintBar.Row(List.of(new KeyHintBar.Hint("-", messages.get("legend.missing"), OctopusTheme.MUTED, OctopusTheme.MUTED))));
     }
 
-    private int modeTextWidth() {
+    private int modeNameWidth() {
         return Arrays.stream(AppMode.values())
                 .mapToInt(mode -> messages.modeName(mode).length())
                 .max()
-                .orElse(12) + 4;
+                .orElse(12);
+    }
+
+    private static String center(String text, int width) {
+        int spare = Math.max(0, width - text.length());
+        int left = spare / 2;
+        return " ".repeat(left) + text + " ".repeat(spare - left);
     }
 
     /**
@@ -1117,7 +1211,7 @@ final class MainWindow implements MouseSupport.Handler {
      */
     private void applyLanguage() {
         Interactable focused = window.getFocusedInteractable();
-        dialogBox = retitle(dialogBox, messages.get("box.dialog"));
+        dialogBox = retitle(dialogBox, messages.get("box.output"));
         promptBox = retitle(promptBox, messages.get("box.prompt"));
         pathBox = retitle(pathBox, pathTitle());
         modeBox = retitle(modeBox, messages.get("box.mode"));
@@ -1171,9 +1265,6 @@ final class MainWindow implements MouseSupport.Handler {
         return String.format("%-" + width + "s", value);
     }
 
-    private static String shorten(String text) {
-        return text.length() <= 70 ? text : "..." + text.substring(text.length() - 70 + 3);
-    }
 
     private static LinearLayout linear(Direction direction, int spacing) {
         LinearLayout layout = new LinearLayout(direction);
