@@ -61,7 +61,8 @@ konuşur; kaynak kodunuz bilgisayarınızdan çıkmaz, yönetilecek bir API anah
 - **Kod üretim modu.** Bir sınıfı düz metinle anlatın; model Java kaynağı döndürür, Markdown çitleri temizlenir, tip adı
   bulunur ve dosya `generated/<SınıfAdı>.java` (ya da seçtiğiniz yol) olarak kaydedilir. Var olan dosyanın üzerine yazılmaz.
 - **Mod başına model.** Her mod için <kbd>Ctrl</kbd>+<kbd>L</kbd> ile farklı bir Ollama modeli seçin. Panel hangi
-  modellerin kurulu (`+`), hangilerinin eksik (`-`) olduğunu gösterir; seçiminiz oturumlar arasında hatırlanır.
+  modelleri renklendirir: seçili olan yeşil, kurulu olanlar mavi (`+`), eksik olanlar gri (`-`). Seçiminiz oturumlar
+  arasında hatırlanır.
 - **Rahat terminal arayüzü.** Oturumdaki istekleri ve yanıtları tutan, en yeni mesajı izleyen bir diyalog görünümü, çok
   satırlı prompt, giriş geçmişi, panodan yapıştırma, son çıktıyı kopyalama, ilerleme çubuğu, fare tekerleği ve anında
   iptal.

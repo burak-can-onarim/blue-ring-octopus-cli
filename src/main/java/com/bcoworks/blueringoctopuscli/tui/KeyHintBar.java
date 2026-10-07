@@ -2,6 +2,7 @@ package com.bcoworks.blueringoctopuscli.tui;
 
 import com.googlecode.lanterna.SGR;
 import com.googlecode.lanterna.TerminalSize;
+import com.googlecode.lanterna.TextColor;
 import com.googlecode.lanterna.gui2.AbstractComponent;
 import com.googlecode.lanterna.gui2.ComponentRenderer;
 import com.googlecode.lanterna.gui2.TextGUIGraphics;
@@ -9,31 +10,62 @@ import com.googlecode.lanterna.gui2.TextGUIGraphics;
 import java.util.List;
 
 /**
- * Kısayol çubuğu: her satırın başında grup adı, ardından "TUŞ açıklama" çiftleri. Çiftler satırlar arasında sütunlara
- * hizalanır (n. çift her satırda aynı sütundadır) ve " · " ile ayrılır, böylece ayraçlar alt alta gelir. Tuşlar vurgulu,
- * açıklamalar soluk çizilir. Dar pencerede metin ortadan kesilmez, en sağdaki sütunlar atlanır.
+ * Kısayol / gösterge çubuğu: isteğe bağlı grup adı, ardından "TUŞ açıklama" çiftleri. Çiftler satırlar arasında
+ * sütunlara hizalanır (n. çift her satırda aynı sütundadır) ve " · " ile ayrılır, böylece ayraçlar alt alta gelir.
+ * Tuşlar vurgulu, açıklamalar soluk çizilir (çift başına renk verilebilir). Dar alanda metin ortadan kesilmez,
+ * en sağdaki sütunlar atlanır. Satırlar çalışma anında değiştirilebilir.
  */
 final class KeyHintBar extends AbstractComponent<KeyHintBar> {
 
-    record Hint(String key, String label) {
+    /**
+     * @param key        tuş ya da işaret; boşsa yalnızca açıklama çizilir (düz mesaj)
+     * @param keyColor   tuşun rengi
+     * @param labelColor açıklamanın rengi
+     */
+    record Hint(String key, String label, TextColor keyColor, TextColor labelColor) {
+
+        Hint(String key, String label) {
+            this(key, label, OctopusTheme.BLUE, OctopusTheme.MUTED);
+        }
 
         int width() {
-            return key.length() + 1 + label.length();
+            return key.isEmpty() ? label.length() : key.length() + 1 + label.length();
         }
     }
 
     record Row(String group, List<Hint> hints) {
+
+        Row(List<Hint> hints) {
+            this("", hints);
+        }
     }
 
     static final int GROUP_WIDTH = 10;
     static final String SEPARATOR = " · ";
 
-    private final List<Row> rows;
-    private final int[] columnWidths;
+    private final int groupWidth;
+    private List<Row> rows;
+    private int[] columnWidths;
 
     KeyHintBar(List<Row> rows) {
+        this(rows, GROUP_WIDTH);
+    }
+
+    /**
+     * @param groupWidth grup adı sütununun genişliği; 0 ise grup adı çizilmez
+     */
+    KeyHintBar(List<Row> rows, int groupWidth) {
+        this.groupWidth = groupWidth;
+        setRows(rows);
+    }
+
+    /**
+     * Satırları değiştirir (örn. durum mesajı). Herhangi bir thread yerine GUI thread'inden çağrılmalıdır.
+     */
+    void setRows(List<Row> rows) {
         this.rows = List.copyOf(rows);
         this.columnWidths = columnWidths(this.rows);
+        invalidate();
     }
 
     /**
@@ -74,7 +106,7 @@ final class KeyHintBar extends AbstractComponent<KeyHintBar> {
 
         @Override
         public TerminalSize getPreferredSize(KeyHintBar component) {
-            return new TerminalSize(40, rows.size());
+            return new TerminalSize(40, Math.max(1, rows.size()));
         }
 
         @Override
@@ -82,14 +114,16 @@ final class KeyHintBar extends AbstractComponent<KeyHintBar> {
             graphics.setBackgroundColor(OctopusTheme.BASE);
             graphics.fill(' ');
 
-            int start = 1 + GROUP_WIDTH;
+            int start = 1 + groupWidth;
             int visible = visibleColumns(columnWidths, graphics.getSize().getColumns() - start);
             for (int y = 0; y < rows.size(); y++) {
                 Row row = rows.get(y);
-                graphics.setForegroundColor(OctopusTheme.MAUVE);
-                graphics.enableModifiers(SGR.BOLD);
-                graphics.putString(1, y, row.group());
-                graphics.disableModifiers(SGR.BOLD);
+                if (groupWidth > 0) {
+                    graphics.setForegroundColor(OctopusTheme.MAUVE);
+                    graphics.enableModifiers(SGR.BOLD);
+                    graphics.putString(1, y, row.group());
+                    graphics.disableModifiers(SGR.BOLD);
+                }
 
                 int x = start;
                 for (int column = 0; column < visible; column++) {
@@ -99,17 +133,24 @@ final class KeyHintBar extends AbstractComponent<KeyHintBar> {
                         x += SEPARATOR.length();
                     }
                     if (column < row.hints().size()) {
-                        Hint hint = row.hints().get(column);
-                        graphics.setForegroundColor(OctopusTheme.BLUE);
-                        graphics.enableModifiers(SGR.BOLD);
-                        graphics.putString(x, y, hint.key());
-                        graphics.disableModifiers(SGR.BOLD);
-                        graphics.setForegroundColor(OctopusTheme.MUTED);
-                        graphics.putString(x + hint.key().length() + 1, y, hint.label());
+                        draw(graphics, x, y, row.hints().get(column));
                     }
                     x += columnWidths[column];
                 }
             }
+        }
+
+        private void draw(TextGUIGraphics graphics, int x, int y, Hint hint) {
+            int labelX = x;
+            if (!hint.key().isEmpty()) {
+                graphics.setForegroundColor(hint.keyColor());
+                graphics.enableModifiers(SGR.BOLD);
+                graphics.putString(x, y, hint.key());
+                graphics.disableModifiers(SGR.BOLD);
+                labelX = x + hint.key().length() + 1;
+            }
+            graphics.setForegroundColor(hint.labelColor());
+            graphics.putString(labelX, y, hint.label());
         }
     }
 }

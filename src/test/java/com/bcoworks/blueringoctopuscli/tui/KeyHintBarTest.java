@@ -49,4 +49,17 @@ class KeyHintBarTest {
         assertEquals(1, KeyHintBar.visibleColumns(widths, 12));
         assertEquals(0, KeyHintBar.visibleColumns(widths, 11));
     }
+
+    @Test
+    void messageHintWithoutKeyIsJustItsLabel() {
+        assertEquals(3, new Hint("", "abc", null, null).width());
+    }
+
+    @Test
+    void legendFitsTheModelPanelWidth() {
+        // model paneli iç genişliği 28, çubuk 1 sütun boşlukla başlar: 27 sütun kullanılabilir
+        int[] widths = KeyHintBar.columnWidths(List.of(new Row(List.of(
+                new Hint("●", "seçili"), new Hint("+", "kurulu"), new Hint("-", "yok")))));
+        assertEquals(3, KeyHintBar.visibleColumns(widths, 27));
+    }
 }

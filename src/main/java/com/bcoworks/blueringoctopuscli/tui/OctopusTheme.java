@@ -7,6 +7,7 @@ import com.googlecode.lanterna.graphics.Theme;
 final class OctopusTheme {
 
     static final TextColor.RGB BASE = new TextColor.RGB(0x1e, 0x1e, 0x2e);
+    static final TextColor.RGB SURFACE = new TextColor.RGB(0x31, 0x32, 0x44);
     static final TextColor.RGB MUTED = new TextColor.RGB(0x7f, 0x84, 0x9c);
     static final TextColor.RGB TEXT = new TextColor.RGB(0xcd, 0xd6, 0xf4);
     static final TextColor.RGB BLUE = new TextColor.RGB(0x89, 0xb4, 0xfa);

@@ -8,6 +8,14 @@ contain breaking changes.
 
 ## [Unreleased]
 
+### Changed
+
+- The model panel colours the models: the selected one green, installed ones blue, missing ones grey. The legend
+  below the list uses the same colours and is styled like the shortcut bar; the "Ctrl+L" hint was removed from the
+  panel because the shortcut bar already lists it. The highlighted row shows the cursor while the panel has focus.
+- The shortcut bar rows are reordered: **Giriş** is Enter, Shift+Enter, Ctrl+C, Ctrl+V, ↑↓; **Gezinme** is Tab,
+  PgUp/PgDn, Ctrl+P, Ctrl+L, Esc.
+
 ## [0.1.6] - 2026-10-07
 
 ### Changed
