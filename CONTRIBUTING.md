@@ -45,7 +45,8 @@ changing the mode layer or the UI.
    answer.
 6. **Update the documentation** (`README`, `docs/`) and add a line under `## [Unreleased]` in
    [CHANGELOG.md](CHANGELOG.md) when the change is visible to users.
-7. **Open a pull request** and fill in the template. CI must be green before a review.
+7. **Open a pull request** and fill in the template. CI must be green before a review. A pull request runs the Linux
+   build and tests; Windows, the Docker image and CodeQL run after the merge, on `master`.
 
 ### Code style
 
