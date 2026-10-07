@@ -8,6 +8,14 @@ contain breaking changes.
 
 ## [Unreleased]
 
+## [0.1.8] - 2026-10-07
+
+### Changed
+
+- The shortcut bar also aligns the descriptions: within a column the keys are padded to the same width, so keys,
+  descriptions and the " · " separators line up across both rows.
+- The legend of the model panel is stacked in three rows (green `●` selected, blue `+` installed, grey `-` missing).
+
 ## [0.1.7] - 2026-10-07
 
 ### Changed
@@ -129,7 +137,8 @@ contain breaking changes.
 - `start-agent.bat` launcher for Windows with a model picker.
 - Windows archive with a bundled JRE.
 
-[Unreleased]: https://github.com/burak-can-onarim/blue-ring-octopus-cli/compare/v0.1.7...HEAD
+[Unreleased]: https://github.com/burak-can-onarim/blue-ring-octopus-cli/compare/v0.1.8...HEAD
+[0.1.8]: https://github.com/burak-can-onarim/blue-ring-octopus-cli/compare/v0.1.7...v0.1.8
 [0.1.7]: https://github.com/burak-can-onarim/blue-ring-octopus-cli/compare/v0.1.6...v0.1.7
 [0.1.6]: https://github.com/burak-can-onarim/blue-ring-octopus-cli/compare/v0.1.5...v0.1.6
 [0.1.5]: https://github.com/burak-can-onarim/blue-ring-octopus-cli/compare/v0.1.3...v0.1.5

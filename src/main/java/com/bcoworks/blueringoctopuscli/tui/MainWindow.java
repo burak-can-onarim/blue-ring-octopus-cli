@@ -372,12 +372,12 @@ final class MainWindow implements MouseSupport.Handler {
         separator.setLayoutData(fill());
 
         // Gösterge: renkler listedekiyle aynı (seçili yeşil, kurulu mavi, yok soluk)
-        KeyHintBar legend = new KeyHintBar(List.of(new KeyHintBar.Row(List.of(
-                new KeyHintBar.Hint("●", "seçili", OctopusTheme.GREEN, OctopusTheme.MUTED),
-                new KeyHintBar.Hint("+", "kurulu", OctopusTheme.BLUE, OctopusTheme.MUTED),
-                new KeyHintBar.Hint("-", "yok", OctopusTheme.MUTED, OctopusTheme.MUTED)))), 0);
+        KeyHintBar legend = new KeyHintBar(List.of(
+                new KeyHintBar.Row(List.of(new KeyHintBar.Hint("●", "seçili", OctopusTheme.GREEN, OctopusTheme.MUTED))),
+                new KeyHintBar.Row(List.of(new KeyHintBar.Hint("+", "kurulu", OctopusTheme.BLUE, OctopusTheme.MUTED))),
+                new KeyHintBar.Row(List.of(new KeyHintBar.Hint("-", "yok", OctopusTheme.MUTED, OctopusTheme.MUTED)))), 0);
         // Panel genişliğini bu çubuklar belirlemesin: model listesiyle aynı iç genişlik
-        legend.setPreferredSize(new TerminalSize(SIDE_INNER, 1));
+        legend.setPreferredSize(new TerminalSize(SIDE_INNER, 3));
         modelStatusBar.setPreferredSize(new TerminalSize(SIDE_INNER, 1));
         legend.setLayoutData(fill());
         modelStatusBar.setLayoutData(fill());
