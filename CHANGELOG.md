@@ -8,6 +8,8 @@ contain breaking changes.
 
 ## [Unreleased]
 
+## [0.3.0] - 2026-10-07
+
 ### Added
 
 - **Select and copy text from the Output box with the mouse.** Drag to select, double click for a word, triple click
@@ -174,7 +176,8 @@ contain breaking changes.
 - `start-agent.bat` launcher for Windows with a model picker.
 - Windows archive with a bundled JRE.
 
-[Unreleased]: https://github.com/burak-can-onarim/blue-ring-octopus-cli/compare/v0.2.0...HEAD
+[Unreleased]: https://github.com/burak-can-onarim/blue-ring-octopus-cli/compare/v0.3.0...HEAD
+[0.3.0]: https://github.com/burak-can-onarim/blue-ring-octopus-cli/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/burak-can-onarim/blue-ring-octopus-cli/compare/v0.1.8...v0.2.0
 [0.1.8]: https://github.com/burak-can-onarim/blue-ring-octopus-cli/compare/v0.1.7...v0.1.8
 [0.1.7]: https://github.com/burak-can-onarim/blue-ring-octopus-cli/compare/v0.1.6...v0.1.7
