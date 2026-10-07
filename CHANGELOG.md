@@ -8,6 +8,16 @@ contain breaking changes.
 
 ## [Unreleased]
 
+## [0.1.7] - 2026-10-07
+
+### Changed
+
+- The model panel colours the models: the selected one green, installed ones blue, missing ones grey. The legend
+  below the list uses the same colours and is styled like the shortcut bar; the "Ctrl+L" hint was removed from the
+  panel because the shortcut bar already lists it. The highlighted row shows the cursor while the panel has focus.
+- The shortcut bar rows are reordered: **Giriş** is Enter, Shift+Enter, Ctrl+C, Ctrl+V, ↑↓; **Gezinme** is Tab,
+  PgUp/PgDn, Ctrl+P, Ctrl+L, Esc.
+
 ## [0.1.6] - 2026-10-07
 
 ### Changed
@@ -119,7 +129,8 @@ contain breaking changes.
 - `start-agent.bat` launcher for Windows with a model picker.
 - Windows archive with a bundled JRE.
 
-[Unreleased]: https://github.com/burak-can-onarim/blue-ring-octopus-cli/compare/v0.1.6...HEAD
+[Unreleased]: https://github.com/burak-can-onarim/blue-ring-octopus-cli/compare/v0.1.7...HEAD
+[0.1.7]: https://github.com/burak-can-onarim/blue-ring-octopus-cli/compare/v0.1.6...v0.1.7
 [0.1.6]: https://github.com/burak-can-onarim/blue-ring-octopus-cli/compare/v0.1.5...v0.1.6
 [0.1.5]: https://github.com/burak-can-onarim/blue-ring-octopus-cli/compare/v0.1.3...v0.1.5
 [0.1.3]: https://github.com/burak-can-onarim/blue-ring-octopus-cli/compare/v0.1.2...v0.1.3

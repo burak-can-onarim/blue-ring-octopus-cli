@@ -63,7 +63,8 @@ manage and no per-token bill.
   stripped, the type name is detected and the file is written to `generated/<ClassName>.java` (or a path you choose).
   An existing file is never overwritten.
 - **A model per mode.** Choose a different Ollama model for each mode with <kbd>Ctrl</kbd>+<kbd>L</kbd>. The panel
-  shows which models are installed (`+`) and which are missing (`-`), and the choice is remembered between runs.
+  colours the models: the selected one green, installed ones blue (`+`) and missing ones grey (`-`). The choice is
+  remembered between runs.
 - **Comfortable terminal UI.** A conversation view that keeps the requests and answers of the session and follows the
   newest message, multi-line prompt, input history, paste from the clipboard, copy the last output, progress bar,
   mouse wheel scrolling and instant cancellation.

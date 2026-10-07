@@ -108,8 +108,14 @@ Each mode remembers its own model, so you can use a small fast model for reviews
 
 1. Press <kbd>Ctrl</kbd>+<kbd>L</kbd>.
 2. Move with <kbd>↑</kbd> <kbd>↓</kbd>, choose with <kbd>Enter</kbd>, leave with <kbd>Esc</kbd>.
-3. A `+` means Ollama has the model, `-` means it does not. Choosing a missing model prints the exact
-   `ollama pull <name>` command to run.
+3. The colours tell the state at a glance: **green** is the model selected for this mode, **blue** (`+`) is installed in
+   Ollama and can be chosen, **grey** (`-`) is not installed. The highlighted row is the cursor. Choosing a missing model
+   prints the exact `ollama pull <name>` command to run.
+
+<p align="center">
+  <img src="assets/tui-models.png" alt="The model panel: green selected model, blue installed model, grey missing models" width="760">
+  <br><sub>Kod Generate mode: the selected model (green) is not installed, the installed one (blue) can be chosen, the rest are grey.</sub>
+</p>
 
 The list contains the suggested models (`qwen2.5-coder`, `qwen2.5-coder:14b`, `qwen3-coder:30b`,
 `deepseek-coder-v2:16b`, `llama3.1`, `codellama`, `gpt-oss:20b`) plus anything else you have installed.

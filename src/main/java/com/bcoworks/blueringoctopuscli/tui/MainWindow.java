@@ -43,7 +43,6 @@ final class MainWindow implements MouseSupport.Handler {
 
     private static final int SIDE_PANEL_WIDTH = 30; // kenarlık dahil
     private static final int SIDE_INNER = SIDE_PANEL_WIDTH - 2;
-    private static final int MODEL_NAME_COLS = 22; // "● " + ad + " " + durum = 26 sütun
 
     private static final String[] SPINNER = {"|", "/", "-", "\\"};
     private static final int PROGRESS_CELLS = 12;
@@ -76,10 +75,9 @@ final class MainWindow implements MouseSupport.Handler {
     private final Label progressLabel = new Label(BLANK_PROGRESS);
 
     private final Label modelModeLabel = new Label("");
-    private final Label modelHintLabel = new Label("");
+    private final KeyHintBar modelStatusBar = new KeyHintBar(List.of(new KeyHintBar.Row(List.of())), 0);
     private final Label activeModelLabel = new Label("");
-    private final ActionListBox modelList = new ActionListBox(new TerminalSize(SIDE_INNER, 8));
-    private List<String> modelRows = List.of();
+    private final ModelList modelList = new ModelList();
 
     private final InputHistory promptHistory = new InputHistory();
     private final InputHistory pathHistory = new InputHistory();
@@ -331,15 +329,15 @@ final class MainWindow implements MouseSupport.Handler {
                 new KeyHintBar.Row("Giriş", List.of(
                         new KeyHintBar.Hint("Enter", "Gönder"),
                         new KeyHintBar.Hint("Shift+Enter", "Yeni satır"),
-                        new KeyHintBar.Hint("Ctrl+V", "Yapıştır"),
                         new KeyHintBar.Hint("Ctrl+C", "Kopyala"),
+                        new KeyHintBar.Hint("Ctrl+V", "Yapıştır"),
                         new KeyHintBar.Hint("↑↓", "Geçmiş"))),
                 new KeyHintBar.Row("Gezinme", List.of(
                         new KeyHintBar.Hint("Tab", "Mod"),
+                        new KeyHintBar.Hint("PgUp/PgDn", "Kaydır"),
                         new KeyHintBar.Hint("Ctrl+P", "Prompt/Path"),
                         new KeyHintBar.Hint("Ctrl+L", "Model"),
-                        new KeyHintBar.Hint("Esc", "İptal / Çıkış"),
-                        new KeyHintBar.Hint("PgUp/PgDn", "Kaydır")))));
+                        new KeyHintBar.Hint("Esc", "İptal / Çıkış")))));
         keyHints.setLayoutData(fill());
 
         // --- uygulama çerçevesi
@@ -368,21 +366,28 @@ final class MainWindow implements MouseSupport.Handler {
 
     private Border buildModelPanel() {
         modelModeLabel.setForegroundColor(OctopusTheme.MAUVE);
-        modelHintLabel.setForegroundColor(OctopusTheme.MUTED);
         modelList.setLayoutData(grow());
 
         Separator separator = new Separator(Direction.HORIZONTAL);
         separator.setLayoutData(fill());
 
-        Label legend = new Label(fit(" ● seçili  + kurulu  - yok", SIDE_INNER));
-        legend.setForegroundColor(OctopusTheme.MUTED);
+        // Gösterge: renkler listedekiyle aynı (seçili yeşil, kurulu mavi, yok soluk)
+        KeyHintBar legend = new KeyHintBar(List.of(new KeyHintBar.Row(List.of(
+                new KeyHintBar.Hint("●", "seçili", OctopusTheme.GREEN, OctopusTheme.MUTED),
+                new KeyHintBar.Hint("+", "kurulu", OctopusTheme.BLUE, OctopusTheme.MUTED),
+                new KeyHintBar.Hint("-", "yok", OctopusTheme.MUTED, OctopusTheme.MUTED)))), 0);
+        // Panel genişliğini bu çubuklar belirlemesin: model listesiyle aynı iç genişlik
+        legend.setPreferredSize(new TerminalSize(SIDE_INNER, 1));
+        modelStatusBar.setPreferredSize(new TerminalSize(SIDE_INNER, 1));
+        legend.setLayoutData(fill());
+        modelStatusBar.setLayoutData(fill());
 
         Panel content = new Panel(linear(Direction.VERTICAL, 0));
         content.addComponent(modelModeLabel);
         content.addComponent(modelList);
         content.addComponent(separator);
         content.addComponent(legend);
-        content.addComponent(modelHintLabel);
+        content.addComponent(modelStatusBar);
 
         Border box = content.withBorder(Borders.singleLine(" Model "));
         box.setLayoutData(fill());
@@ -674,19 +679,15 @@ final class MainWindow implements MouseSupport.Handler {
     }
 
     private void moveModelCursor(int delta) {
-        int count = modelList.getItemCount();
-        if (count == 0) {
-            return;
-        }
-        modelList.setSelectedIndex(Math.max(0, Math.min(count - 1, modelList.getSelectedIndex() + delta)));
+        modelList.moveCursor(delta);
     }
 
     private void chooseSelectedModel() {
-        int index = modelList.getSelectedIndex();
-        if (index < 0 || index >= modelRows.size()) {
+        ModelList.Row row = modelList.cursorRow();
+        if (row == null) {
             return;
         }
-        String name = modelRows.get(index);
+        String name = row.name();
         AppMode mode = appContext.getCurrentMode();
         if (installedModels.isKnown() && !installedModels.isInstalled(name)) {
             // Durum kutusu dar; uzun model adlarında komut kesilir, bu yüzden tam komut çıktıya da yazılır.
@@ -717,14 +718,11 @@ final class MainWindow implements MouseSupport.Handler {
         AppMode mode = appContext.getCurrentMode();
         String selected = modelSettings.modelFor(mode);
         List<String> names = modelNames(selected);
-        int cursor = Math.max(0, modelList.getSelectedIndex());
+        int cursor = Math.max(0, modelList.getCursor());
 
-        modelRows = names;
-        modelList.clearItems();
-        for (String name : names) {
-            modelList.addItem(modelRow(name, sameModel(name, selected)), () -> {
-            });
-        }
+        modelList.setRows(names.stream()
+                .map(name -> new ModelList.Row(name, sameModel(name, selected), installedState(name)))
+                .toList());
         if (cursorToSelected) {
             for (int i = 0; i < names.size(); i++) {
                 if (sameModel(names.get(i), selected)) {
@@ -733,7 +731,7 @@ final class MainWindow implements MouseSupport.Handler {
                 }
             }
         }
-        modelList.setSelectedIndex(Math.max(0, Math.min(cursor, names.size() - 1)));
+        modelList.setCursor(cursor);
 
         modelModeLabel.setText(fit(" Mod: " + mode.getDisplayName(), SIDE_INNER));
         refreshModelHint();
@@ -757,23 +755,25 @@ final class MainWindow implements MouseSupport.Handler {
         return names;
     }
 
-    private String modelRow(String name, boolean selected) {
-        String state = !installedModels.isKnown() ? " " : installedModels.isInstalled(name) ? "+" : "-";
-        return (selected ? "●" : "○") + " " + fit(name, MODEL_NAME_COLS) + " " + state;
+    private ModelList.Installed installedState(String name) {
+        if (!installedModels.isKnown()) {
+            return ModelList.Installed.UNKNOWN;
+        }
+        return installedModels.isInstalled(name) ? ModelList.Installed.YES : ModelList.Installed.NO;
     }
 
     private void refreshModelHint() {
-        boolean unreachable = installedModels.isChecked() && !installedModels.isKnown();
-        String text;
+        List<KeyHintBar.Hint> hints;
         if (!installedModels.isChecked()) {
-            text = " Ollama kontrol ediliyor...";
-        } else if (unreachable) {
-            text = " Ollama'ya ulaşılamadı";
+            hints = List.of(new KeyHintBar.Hint("", "Ollama kontrol ediliyor...", OctopusTheme.MUTED, OctopusTheme.MUTED));
+        } else if (!installedModels.isKnown()) {
+            hints = List.of(new KeyHintBar.Hint("", "Ollama'ya ulaşılamadı", OctopusTheme.YELLOW, OctopusTheme.YELLOW));
+        } else if (focusedOnModels()) {
+            hints = List.of(new KeyHintBar.Hint("Enter", "Seç"), new KeyHintBar.Hint("Esc", "Geri"));
         } else {
-            text = focusedOnModels() ? " Enter: seç · Esc: geri" : " Ctrl+L: model değiştir";
+            hints = List.of(); // paneli açan kısayol alttaki genel kısayol çubuğunda yazıyor
         }
-        modelHintLabel.setText(fit(text, SIDE_INNER));
-        modelHintLabel.setForegroundColor(unreachable ? OctopusTheme.YELLOW : OctopusTheme.MUTED);
+        modelStatusBar.setRows(List.of(new KeyHintBar.Row(hints)));
     }
 
     private void refreshActiveModel() {
