@@ -53,11 +53,6 @@ final class MainWindow implements MouseSupport.Handler {
             .max()
             .orElse(12) + 4;
     private static final long NOTICE_MILLIS = 3_000;
-    private static final String KEYS_1 =
-            " Enter Gönder · Shift+Enter Yeni satır · ↑↓ Geçmiş · Tab Mod · PgUp/PgDn/Tekerlek Kaydır · Sol tık Alan seç";
-    private static final String KEYS_2 =
-            " Ctrl+P Prompt/Path · Ctrl+L Model · Ctrl+V Yapıştır · Ctrl+C Çıktıyı kopyala · Esc İptal / Çıkış";
-    private static final int WHEEL_SCROLL_LINES = MouseSupport.LINES_PER_WHEEL_NOTCH;
 
     private final MultiWindowTextGUI gui;
     private final AppContext appContext;
@@ -331,10 +326,20 @@ final class MainWindow implements MouseSupport.Handler {
         statusRow.addComponent(stepBox);
         statusRow.addComponent(activeModelBox);
 
-        Label keysLine1 = new Label(KEYS_1);
-        keysLine1.setForegroundColor(OctopusTheme.MUTED);
-        Label keysLine2 = new Label(KEYS_2);
-        keysLine2.setForegroundColor(OctopusTheme.MUTED);
+        KeyHintBar keysLine1 = new KeyHintBar("Giriş", List.of(
+                new KeyHintBar.Hint("Enter", "Gönder"),
+                new KeyHintBar.Hint("Shift+Enter", "Yeni satır"),
+                new KeyHintBar.Hint("↑↓", "Geçmiş"),
+                new KeyHintBar.Hint("Ctrl+V", "Yapıştır"),
+                new KeyHintBar.Hint("Ctrl+C", "Kopyala")));
+        KeyHintBar keysLine2 = new KeyHintBar("Gezinme", List.of(
+                new KeyHintBar.Hint("Tab", "Mod"),
+                new KeyHintBar.Hint("Ctrl+L", "Model"),
+                new KeyHintBar.Hint("Ctrl+P", "Prompt/Path"),
+                new KeyHintBar.Hint("PgUp/PgDn", "Kaydır"),
+                new KeyHintBar.Hint("Esc", "İptal / Çıkış")));
+        keysLine1.setLayoutData(fill());
+        keysLine2.setLayoutData(fill());
 
         // --- uygulama çerçevesi
         Panel content = new Panel(linear(Direction.VERTICAL, 0));

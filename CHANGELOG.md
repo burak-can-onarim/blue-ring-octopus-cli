@@ -8,6 +8,11 @@ contain breaking changes.
 
 ## [Unreleased]
 
+### Changed
+
+- The key hints at the bottom of the window are redesigned: two rows (**Giriş** and **Gezinme**) with the keys
+  highlighted and fewer items. On a narrow window the last items are dropped instead of being cut in the middle.
+
 ## [0.1.5] - 2026-10-06
 
 > `0.1.4` was only a development version and was never tagged; this release contains everything since `0.1.3`.
