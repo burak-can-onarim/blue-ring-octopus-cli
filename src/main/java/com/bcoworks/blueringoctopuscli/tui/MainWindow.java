@@ -283,7 +283,7 @@ final class MainWindow implements MouseSupport.Handler {
         bannerBox.setLayoutData(fill());
 
         // Diyalog: istekler ve yanıtlar. Prompt girişinden ayrı bir kutudur.
-        dialogBox = titled(dialog, messages.get("box.dialog"));
+        dialogBox = titled(dialog, messages.get("box.output"));
         dialogBox.setLayoutData(grow());
 
         // Prompt: ipucu satırı + çok satırlı giriş
@@ -1004,7 +1004,7 @@ final class MainWindow implements MouseSupport.Handler {
     }
 
     private String pathTitle() {
-        return messages.get("box.path", shorten(System.getProperty("user.dir")));
+        return messages.get("box.path");
     }
 
     /**
@@ -1117,7 +1117,7 @@ final class MainWindow implements MouseSupport.Handler {
      */
     private void applyLanguage() {
         Interactable focused = window.getFocusedInteractable();
-        dialogBox = retitle(dialogBox, messages.get("box.dialog"));
+        dialogBox = retitle(dialogBox, messages.get("box.output"));
         promptBox = retitle(promptBox, messages.get("box.prompt"));
         pathBox = retitle(pathBox, pathTitle());
         modeBox = retitle(modeBox, messages.get("box.mode"));
@@ -1171,9 +1171,6 @@ final class MainWindow implements MouseSupport.Handler {
         return String.format("%-" + width + "s", value);
     }
 
-    private static String shorten(String text) {
-        return text.length() <= 70 ? text : "..." + text.substring(text.length() - 70 + 3);
-    }
 
     private static LinearLayout linear(Direction direction, int spacing) {
         LinearLayout layout = new LinearLayout(direction);
