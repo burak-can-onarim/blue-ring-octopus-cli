@@ -64,6 +64,7 @@ final class MainWindow implements MouseSupport.Handler {
 
     private final BasicWindow window = new BasicWindow("Blue Ring Octopus CLI");
     private final Panel bannerPanel = new Panel(linear(Direction.VERTICAL, 0));
+    private final BannerView bannerView = new BannerView();
     private final DialogView dialog = new DialogView();
     private Border dialogBox;
     private Border promptBox;
@@ -103,7 +104,7 @@ final class MainWindow implements MouseSupport.Handler {
     private volatile int progressTotal;
     private volatile long noticeUntil;
     private ScheduledFuture<?> spinnerTask;
-    private List<String> shownBanner = List.of();
+    private BannerArt.Banner shownBanner;
 
     /**
      * Çalışan tek bir işlem. İptal edilince çıktıları yok sayılır, arayüz hemen serbest kalır.
@@ -278,6 +279,7 @@ final class MainWindow implements MouseSupport.Handler {
         // --- üst: banner (tam genişlik)
         Panel bannerHolder = new Panel(linear(Direction.VERTICAL, 0));
         bannerPanel.setLayoutData(LinearLayout.createLayoutData(LinearLayout.Alignment.Center));
+        bannerPanel.addComponent(bannerView);
         bannerHolder.addComponent(bannerPanel);
         Border bannerBox = bannerHolder.withBorder(Borders.singleLine());
         bannerBox.setLayoutData(fill());
@@ -398,31 +400,12 @@ final class MainWindow implements MouseSupport.Handler {
 
     private void applyBanner(TerminalSize size) {
         int available = size.getColumns() - 2 - 2; // uygulama çerçevesi + banner kutusu
-        List<String> lines = banner.choose(available, size.getRows());
-        if (lines.equals(shownBanner)) {
+        BannerArt.Banner chosen = banner.choose(available, size.getRows());
+        if (chosen.equals(shownBanner)) {
             return;
         }
-        shownBanner = lines;
-        bannerPanel.removeAllComponents();
-        for (int i = 0; i < lines.size(); i++) {
-            Label label = new Label(lines.get(i));
-            label.setForegroundColor(bannerColor(i, lines.size()));
-            bannerPanel.addComponent(label);
-        }
-    }
-
-    /**
-     * Sanat satırlarında mavi → mor geçiş, son satır (alt başlık) soluk.
-     */
-    private static TextColor bannerColor(int index, int count) {
-        if (count == 1) {
-            return OctopusTheme.BLUE;
-        }
-        if (index == count - 1) {
-            return OctopusTheme.MUTED;
-        }
-        double t = count <= 2 ? 0 : index / (double) (count - 2);
-        return OctopusTheme.lerp(OctopusTheme.BLUE, OctopusTheme.MAUVE, t);
+        shownBanner = chosen;
+        bannerView.setBanner(chosen);
     }
 
     // ---------------------------------------------------------------- input

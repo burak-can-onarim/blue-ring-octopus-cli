@@ -1,0 +1,25 @@
+# Blue-ringed octopus for the banner: one character is one pixel, two pixel rows share a terminal row.
+# "pal <char> <#rrggbb>" defines a colour, "." is transparent. Rendered by BannerArt.
+pal K #0a1a44
+pal b #2c6bd0
+pal h #66adff
+pal d #1b46a0
+pal c #7ff0ff
+pal e #e9f4ff
+pal p #0a1a44
+.........KKKKKK.........
+.......KKbbbbbbKK.......
+.....KKbbhhhhhhbbKK.....
+....KcccbbhhhhbbcccK....
+...KbcbcbbbbbbbbcbcbK...
+...KbcccbbbbbbbbcccbK...
+..KdbbbbeeebbeeebbbbdK..
+..KdbbbbepebbepebbbbdK..
+..KdbbbbeeebbeeebbbbdK..
+..KdbbbbbbbbbbbbbbbbdK..
+.KbbdKbbbKbbbbKbbbKdbbK.
+KbbbKbbbKbbbbbbKbbbKbbbK
+KbcbKbcbKbcbbcbKbcbKbcbK
+KbbKbbbKbbbKKbbbKbbbKbbK
+.KbKbcbKbbK..KbbKbcbKbK.
+..K.KbK.KK....KK.KbK.K..
