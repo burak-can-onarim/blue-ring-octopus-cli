@@ -125,7 +125,7 @@ final class KeyHintBar extends AbstractComponent<KeyHintBar> {
                 Row row = rows.get(y);
                 int x = MARGIN;
                 for (int column = 0; column < visible; column++) {
-                    if (column > 0) {
+                    if (column > 0 && column < row.hints().size()) {
                         graphics.setForegroundColor(OctopusTheme.MUTED);
                         graphics.putString(x, y, SEPARATOR);
                         x += SEPARATOR.length();

@@ -86,7 +86,8 @@ The UI picks the handler for the current mode through `ModeDispatcher`; the one-
 | `cli` | Spring Shell commands for one-shot use (`analyze`, `generate`). |
 | `command` | Spring Shell `mode` selector. |
 | `config` | Spring wiring: executor, startup runner, shell prompt, `AppInfo` (version shown in the banner). |
-| `context` | `AppMode` (the four modes and their hints) and `AppContext` (the current mode). |
+| `context` | `AppMode` (the four modes) and `AppContext` (the current mode). |
+| `i18n` | `Language` (the six interface languages) and `Messages` (every text shown to the user, loaded from `i18n/messages_<code>.properties`). |
 | `mode` | One handler per mode, the dispatcher, the `ModeRequest` value object and the `IModeConsole` abstraction. |
 | `model` | Everything about *which* model is used: client registry, installed-model discovery, per-mode settings, suggestions. |
 | `service` | `ICodeAnalyzerService` (the LLM prompts) and `SourceCodeScanner`. |
@@ -209,6 +210,7 @@ one) would add a dependency, a failure mode and a migration story without buying
 | What | Where | Format | Written when |
 |---|---|---|---|
 | Model chosen for each mode | `~/.octopus-cli/models.properties` | Java properties, keyed by `AppMode` name | A model is picked in the model panel |
+| Interface language | `~/.octopus-cli/settings.properties` (`language=de`) | Java properties | A language is picked with Ctrl+G |
 | Application log | `logs/octopus.log` (override with `LOGGING_FILE_NAME`) | Text | Always (console output is switched off so it does not corrupt the UI) |
 | Generated code | `generated/<TypeName>.java` or the `--out` path | Java source | Only in code generation mode, never over an existing file |
 
@@ -237,12 +239,14 @@ an embedded store such as SQLite and an ADR describing why a file is no longer e
 4. **Fail fast at start-up.** A mode without a handler is a programming error caught by `ModeDispatcher`.
 5. **Small, testable units.** Pure helpers (`PathUtils`, `AppInfo.normalize`, `InputHistory`, `SourceCodeScanner`)
    are plain classes that are unit-tested without a Spring context.
+6. **No hard-coded user-facing text.** Every message goes through `Messages`; `MessagesTest` keeps the six language
+   files in step (same keys, placeholders and line breaks, and widths that fit the narrow panels).
 
 ## Extending the application
 
 To add a new mode (for example the planned documentation writer):
 
-1. Add a constant to `AppMode` with its display name and the prompt/path hints.
+1. Add a constant to `AppMode` and its `mode.<NAME>.name`, `.prompt` and `.path` texts to every language file.
 2. Add a prompt method to `ICodeAnalyzerService` (or a new service interface).
 3. Implement `IModeHandler` (or replace the `PlannedModeHandler` subclass for that mode). Use `IModeConsole` for all
    output and honour `isCancelled()`.

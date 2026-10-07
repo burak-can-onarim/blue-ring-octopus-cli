@@ -55,7 +55,7 @@ public class InstalledModels {
                 }
             }
         } catch (IOException e) {
-            log.debug("Ollama model listesi alınamadı: {}", e.getMessage());
+            log.debug("Could not fetch the Ollama model list: {}", e.getMessage());
         } catch (InterruptedException e) {
             Thread.currentThread().interrupt();
             return;

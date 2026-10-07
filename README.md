@@ -73,8 +73,8 @@ manage and no per-token bill.
 - **Two more modes are on the way:** documentation writing and unit-test generation (see the [roadmap](#roadmap)).
 
 > [!NOTE]
-> The interface text and the language of the analysis report are currently **Turkish**. The model is asked to answer
-> in Turkish by design; see the [roadmap](#roadmap) for localisation ideas.
+> The interface and the model's answers come in **English** (default), **Türkçe**, **Deutsch**, **Français**,
+> **Italiano** and **Español**. Press <kbd>Ctrl</kbd>+<kbd>G</kbd> to change it, see [Language](docs/USAGE.md#language).
 
 <table>
   <tr>
@@ -141,6 +141,7 @@ path, and <kbd>Enter</kbd> runs it.
 | <kbd>↑</kbd> <kbd>↓</kbd> | Move through lines, then through input history |
 | <kbd>Ctrl</kbd>+<kbd>P</kbd> | Switch between the Prompt and Path fields |
 | <kbd>Ctrl</kbd>+<kbd>L</kbd> | Open the model panel for the current mode |
+| <kbd>Ctrl</kbd>+<kbd>G</kbd> | Choose the interface language (the model answers in it too) |
 | <kbd>Ctrl</kbd>+<kbd>V</kbd> / <kbd>Shift</kbd>+<kbd>Insert</kbd> | Paste from the clipboard |
 | <kbd>Ctrl</kbd>+<kbd>C</kbd> | Copy the last output to the clipboard |
 | <kbd>PgUp</kbd> / <kbd>PgDn</kbd>, mouse wheel | Scroll the conversation (the wheel also scrolls a long prompt) |
@@ -172,6 +173,7 @@ Run `help` for the full command list. More detail, including troubleshooting, is
 |---|---|---|
 | Default model | `AI_MODEL_NAME` environment variable | `qwen2.5-coder` |
 | Model per mode | <kbd>Ctrl</kbd>+<kbd>L</kbd> in the UI (saved to `~/.octopus-cli/models.properties`) | the default model |
+| Language | <kbd>Ctrl</kbd>+<kbd>G</kbd> in the UI (saved to `~/.octopus-cli/settings.properties`) or the `OCTOPUS_LANG` environment variable (`en`, `tr`, `de`, `fr`, `it`, `es`) | `en` |
 | Ollama address | `LANGCHAIN4J_OLLAMA_CHAT_MODEL_BASE_URL` environment variable | `http://localhost:11434` |
 | Temperature, timeout | `langchain4j.ollama.chat-model.*` in `application.yaml` | `0.2`, `5m` |
 | Log file | `LOGGING_FILE_NAME` environment variable | `logs/octopus.log` |
@@ -237,9 +239,9 @@ with sequence diagrams and the persistence model, is in [docs/ARCHITECTURE.md](d
 |---|---|
 | ✅ Done | Code analysis mode, code generation mode, full-screen UI, per-mode model selection |
 | ✅ Done | One-shot commands, Docker image, CI and release automation |
-| 🚧 Planned | **Documentation writing** mode (`Döküman Hazırlama`) |
-| 🚧 Planned | **Unit-test generation** mode (`Birim Test Yazdırma`) |
-| 💡 Idea | English (and other) interface languages and report language |
+| ✅ Done | Six interface languages (English, Türkçe, Deutsch, Français, Italiano, Español); the model answers in the chosen one |
+| 🚧 Planned | **Documentation writing** mode |
+| 🚧 Planned | **Unit-test generation** mode |
 | 💡 Idea | Analysis and generation for languages other than Java |
 
 Ideas are not commitments. If one matters to you, [open an issue](https://github.com/burak-can-onarim/blue-ring-octopus-cli/issues/new/choose) and say why.

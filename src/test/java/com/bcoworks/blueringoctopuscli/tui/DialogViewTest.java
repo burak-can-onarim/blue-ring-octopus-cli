@@ -17,8 +17,12 @@ class DialogViewTest {
 
     @Test
     void classifiesAnswerLines() {
+        assertEquals(Kind.WARNING, DialogView.classify("Error: path not found"));
+        assertEquals(Kind.WARNING, DialogView.classify("  Warning: invalid output"));
         assertEquals(Kind.WARNING, DialogView.classify("Hata: yol bulunamadı"));
-        assertEquals(Kind.WARNING, DialogView.classify("  Uyarı: geçersiz çıktı"));
+        assertEquals(Kind.WARNING, DialogView.classify("Fehler: Pfad nicht gefunden"));
+        assertEquals(Kind.WARNING, DialogView.classify("Erreur : chemin introuvable"));
+        assertEquals(Kind.ANSWER, DialogView.classify("Error handling is missing in this method"));
         assertEquals(Kind.HEADING, DialogView.classify("--- PathUtils.java ---"));
         assertEquals(Kind.INFO, DialogView.classify("■ İşlem iptal edildi."));
         assertEquals(Kind.ANSWER, DialogView.classify("Normal bir satır"));

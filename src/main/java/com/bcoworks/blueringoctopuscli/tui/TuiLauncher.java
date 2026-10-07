@@ -2,6 +2,7 @@ package com.bcoworks.blueringoctopuscli.tui;
 
 import com.bcoworks.blueringoctopuscli.config.AppInfo;
 import com.bcoworks.blueringoctopuscli.context.AppContext;
+import com.bcoworks.blueringoctopuscli.i18n.Messages;
 import com.bcoworks.blueringoctopuscli.mode.ModeDispatcher;
 import com.bcoworks.blueringoctopuscli.model.InstalledModels;
 import com.bcoworks.blueringoctopuscli.model.ModelSettings;
@@ -48,19 +49,22 @@ public class TuiLauncher {
     private final BannerArt banner;
     private final ModelSettings modelSettings;
     private final InstalledModels installedModels;
+    private final Messages messages;
 
     public TuiLauncher(AppContext appContext,
                        ModeDispatcher dispatcher,
                        @Qualifier("aiTaskExecutor") ExecutorService aiExecutor,
                        AppInfo appInfo,
                        ModelSettings modelSettings,
-                       InstalledModels installedModels) {
+                       InstalledModels installedModels,
+                       Messages messages) {
         this.appContext = appContext;
         this.dispatcher = dispatcher;
         this.aiExecutor = aiExecutor;
         this.banner = BannerArt.load(appInfo.version());
         this.modelSettings = modelSettings;
         this.installedModels = installedModels;
+        this.messages = messages;
     }
 
     /**
@@ -86,7 +90,7 @@ public class TuiLauncher {
             MultiWindowTextGUI gui = new MultiWindowTextGUI(screen);
             gui.setTheme(OctopusTheme.main());
 
-            MainWindow main = new MainWindow(gui, appContext, dispatcher, aiExecutor, banner, modelSettings, installedModels);
+            MainWindow main = new MainWindow(gui, appContext, dispatcher, aiExecutor, banner, modelSettings, installedModels, messages);
             terminal.addResizeListener((_, size) -> main.onResize(size));
             if (terminal instanceof SwingTerminalFrame frame) {
                 configureFrame(frame, main, fontConfiguration);

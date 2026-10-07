@@ -12,7 +12,7 @@ public class TuiCommand {
 
     private final TuiLauncher launcher;
 
-    @ShellMethod(key = {"ui", "dashboard"}, value = "Tam ekran Lanterna TUI arayüzünü başlatır.")
+    @ShellMethod(key = {"ui", "dashboard"}, value = "Starts the full-screen Lanterna terminal UI.")
     public void startUi() throws IOException {
         launcher.launch();
     }

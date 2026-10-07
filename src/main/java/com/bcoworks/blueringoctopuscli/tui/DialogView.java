@@ -1,5 +1,6 @@
 package com.bcoworks.blueringoctopuscli.tui;
 
+import com.bcoworks.blueringoctopuscli.i18n.Messages;
 import com.googlecode.lanterna.TerminalSize;
 import com.googlecode.lanterna.TextColor;
 import com.googlecode.lanterna.gui2.AbstractComponent;
@@ -86,7 +87,7 @@ final class DialogView extends AbstractComponent<DialogView> {
      */
     static Kind classify(String line) {
         String stripped = line.stripLeading();
-        if (stripped.startsWith("Hata") || stripped.startsWith("Uyarı")) {
+        if (Messages.isProblemLine(stripped)) {
             return Kind.WARNING;
         }
         if (stripped.startsWith("--- ")) {

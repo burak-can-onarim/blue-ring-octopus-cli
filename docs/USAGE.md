@@ -39,7 +39,7 @@ java --enable-native-access=ALL-UNNAMED -jar blue-ring-octopus-cli.jar
 ┌ Blue Ring Octopus CLI ───────────────────────────────────────────────────────┐
 │ ┌ banner ──────────────────────────────────────────────────────────────────┐ │
 │ └──────────────────────────────────────────────────────────────────────────┘ │
-│ ┌ Diyalog ────────────────────────────────────────────┐ ┌ Model ──────────┐ │
+│ ┌ Dialog ─────────────────────────────────────────────┐ ┌ Model ──────────┐ │
 │ │ requests and answers of the session                 │ │ model for the   │ │
 │ └─────────────────────────────────────────────────────┘ │ current mode    │ │
 │ ┌ Prompt ─────────────────────────────────────────────┐ │ ● selected      │ │
@@ -52,7 +52,7 @@ java --enable-native-access=ALL-UNNAMED -jar blue-ring-octopus-cli.jar
 └──────────────────────────────────────────────────────────────────────────────┘
 ```
 
-The **Diyalog** box is a conversation: every request appears under a "Sen" (you) heading with the mode and model, and
+The **Dialog** box is a conversation: every request appears under a "You" heading with the mode and model, and
 the answer under "Octopus". It starts empty. The history of the session stays in memory (up to 5000 lines) and is gone
 when you quit. The view follows the newest message; scroll up to read earlier ones and it stops following until you
 scroll back to the bottom. The **Prompt** box below it is where you type; the line above the input tells what the
@@ -72,6 +72,7 @@ and UTF-8 support.
 | <kbd>↑</kbd> / <kbd>↓</kbd> | Move between lines of a multi-line prompt, then step through input history |
 | <kbd>Ctrl</kbd>+<kbd>P</kbd> | Switch focus between the Prompt field and the Path field |
 | <kbd>Ctrl</kbd>+<kbd>L</kbd> | Open (or close) the model panel for the current mode |
+| <kbd>Ctrl</kbd>+<kbd>G</kbd> | Choose the interface language, see [Language](#language) |
 | <kbd>Ctrl</kbd>+<kbd>V</kbd>, <kbd>Shift</kbd>+<kbd>Insert</kbd> | Paste. In the Path field, surrounding quotes from Windows "Copy as path" are removed |
 | <kbd>Ctrl</kbd>+<kbd>C</kbd> | Copy the output of the last run to the clipboard |
 | <kbd>PgUp</kbd> / <kbd>PgDn</kbd> | Scroll the conversation while typing |
@@ -81,7 +82,7 @@ and UTF-8 support.
 
 Typing `exit` (or `cikis`) in the prompt and pressing <kbd>Enter</kbd> also quits.
 
-**Mouse.** Only three things respond to the mouse, on purpose: the wheel over the Diyalog box, the wheel over a long prompt, and a left click on the Prompt or Path box. Touchpads (smooth, fractional scrolling) work too. Everything else (modes, the model list, dialogs) stays on the keyboard. Mouse support currently exists in the Windows window only; in a Linux/macOS terminal the mouse keeps its normal behaviour, so you can still select and copy text with it.
+**Mouse.** Only three things respond to the mouse, on purpose: the wheel over the Dialog box, the wheel over a long prompt, and a left click on the Prompt or Path box. Touchpads (smooth, fractional scrolling) work too. Everything else (modes, the model list, dialogs) stays on the keyboard. Mouse support currently exists in the Windows window only; in a Linux/macOS terminal the mouse keeps its normal behaviour, so you can still select and copy text with it.
 
 ## Modes
 
@@ -89,10 +90,10 @@ Switch modes with <kbd>Tab</kbd>. The hint line above the input shows what the c
 
 | Mode | Prompt | Path | What it does |
 |---|---|---|---|
-| **Kod Analizi** (code analysis) | not used | file or folder; empty means the working directory | Reviews every `.java` file found: bugs and security, performance, Clean Code. The report is written in Turkish. |
-| **Kod Generate** (code generation) | what to write, up to 2000 characters | optional target `.java` file | Writes one Java type. Empty path means `generated/<TypeName>.java`. Existing files are never overwritten. |
-| **Döküman Hazırlama** (documentation) | – | – | Planned. Selecting it prints a "not ready yet" message. |
-| **Birim Test Yazdırma** (unit tests) | – | – | Planned. Selecting it prints a "not ready yet" message. |
+| **Code Analysis** | not used | file or folder; empty means the working directory | Reviews every `.java` file found: bugs and security, performance, Clean Code. The report is written in Turkish. |
+| **Code Generation** | what to write, up to 2000 characters | optional target `.java` file | Writes one Java type. Empty path means `generated/<TypeName>.java`. Existing files are never overwritten. |
+| **Documentation** | – | – | Planned. Selecting it prints a "not ready yet" message. |
+| **Unit Tests** | – | – | Planned. Selecting it prints a "not ready yet" message. |
 
 Limits and behaviour worth knowing:
 
@@ -114,7 +115,7 @@ Each mode remembers its own model, so you can use a small fast model for reviews
 
 <p align="center">
   <img src="assets/tui-models.png" alt="The model panel: green selected model, blue installed model, grey missing models" width="760">
-  <br><sub>Kod Generate mode: the selected model (green) is not installed, the installed one (blue) can be chosen, the rest are grey.</sub>
+  <br><sub>Code Generation mode: the selected model (green) is not installed, the installed one (blue) can be chosen, the rest are grey.</sub>
 </p>
 
 The list contains the suggested models (`qwen2.5-coder`, `qwen2.5-coder:14b`, `qwen3-coder:30b`,
@@ -150,6 +151,18 @@ java --enable-native-access=ALL-UNNAMED -jar blue-ring-octopus-cli.jar help gene
 The one-shot `analyze` and `generate` commands always use the default model (`AI_MODEL_NAME`, or `qwen2.5-coder`)
 unless you have saved a different model for that mode in the UI.
 
+## Language
+
+The interface speaks **English** (the default), **Türkçe**, **Deutsch**, **Français**, **Italiano** and **Español**.
+The model is asked to answer in the same language, and so are the mode names, hints, messages and dialogs.
+
+- Press <kbd>Ctrl</kbd>+<kbd>G</kbd>, pick a language with <kbd>↑</kbd> / <kbd>↓</kbd> and press <kbd>Enter</kbd>
+  (<kbd>Esc</kbd> cancels). It applies at once; text that is already in the conversation keeps its language. The
+  choice is saved to `~/.octopus-cli/settings.properties`.
+- Set the `OCTOPUS_LANG` environment variable (`en`, `tr`, `de`, `fr`, `it` or `es`) to choose the language for one
+  run, in Docker or for the one-shot commands. It takes priority over the saved choice.
+- The help texts of the one-shot commands (`help`, `help generate`) are always English.
+
 ## Configuration reference
 
 | Setting | Where | Default |
@@ -160,6 +173,7 @@ unless you have saved a different model for that mode in the UI.
 | `langchain4j.ollama.chat-model.timeout` | `application.yaml` or `LANGCHAIN4J_OLLAMA_CHAT_MODEL_TIMEOUT` | `5m` |
 | `logging.file.name` | `LOGGING_FILE_NAME` | `logs/octopus.log` |
 | Per-mode model | UI model panel | stored in `~/.octopus-cli/models.properties` |
+| `OCTOPUS_LANG` | environment variable, or <kbd>Ctrl</kbd>+<kbd>G</kbd> in the UI | `en`; the UI choice is stored in `~/.octopus-cli/settings.properties` |
 
 Any Spring Boot property can be overridden with an environment variable (dots and dashes become underscores, upper
 case) or with `--property=value` on the command line.
