@@ -93,6 +93,21 @@ final class MainWindow implements MouseSupport.Handler {
     private final InputHistory pathHistory = new InputHistory();
     private final AtomicBoolean dialogOpen = new AtomicBoolean(false);
     private boolean selecting; // a text selection is being dragged in the output box (GUI thread only)
+
+    /**
+     * Something in an open dialog that reacts to a mouse click: a button, or the row list of the language picker.
+     * The action gets the click position relative to the component.
+     */
+    private record ClickTarget(Component component, ClickAction action) {
+    }
+
+    @FunctionalInterface
+    private interface ClickAction {
+        void click(int column, int row);
+    }
+
+    private volatile BasicWindow openDialog; // the modal dialog being shown, null if none
+    private volatile List<ClickTarget> dialogTargets = List.of();
     private final StringBuilder lastOutput = new StringBuilder(); // yalnızca UI thread'i dokunur
 
     private final AtomicBoolean busy = new AtomicBoolean(false);
@@ -241,6 +256,7 @@ final class MainWindow implements MouseSupport.Handler {
     public void onPress(int column, int row, int clickCount) {
         ui(() -> {
             if (dialogOpen.get()) {
+                clickInDialog(column, row);
                 return;
             }
             if (isOver(dialog, true, column, row)) {
@@ -944,11 +960,13 @@ final class MainWindow implements MouseSupport.Handler {
         Label label = new Label(message);
         label.setForegroundColor(OctopusTheme.TEXT);
 
-        Button no = new Button(messages.get("dialog.no"), dialog::close);
-        Button yesButton = new Button(messages.get("dialog.yes"), () -> {
+        Runnable chooseNo = dialog::close;
+        Runnable chooseYes = () -> {
             yes.set(true);
             dialog.close();
-        });
+        };
+        Button no = new Button(messages.get("dialog.no"), chooseNo);
+        Button yesButton = new Button(messages.get("dialog.yes"), chooseYes);
         Panel buttons = new Panel(linear(Direction.HORIZONTAL, 2));
         buttons.setLayoutData(LinearLayout.createLayoutData(LinearLayout.Alignment.Center));
         buttons.addComponent(no);
@@ -984,9 +1002,43 @@ final class MainWindow implements MouseSupport.Handler {
             }
         });
 
-        gui.addWindowAndWait(dialog);
+        showDialog(dialog, List.of(
+                new ClickTarget(no, (column, row) -> chooseNo.run()),
+                new ClickTarget(yesButton, (column, row) -> chooseYes.run())));
         return yes.get();
     }
+
+    /**
+     * Shows a modal dialog and, while it is open, lets mouse clicks reach the given targets.
+     */
+    private void showDialog(BasicWindow dialog, List<ClickTarget> targets) {
+        openDialog = dialog;
+        dialogTargets = targets;
+        try {
+            gui.addWindowAndWait(dialog);
+        } finally {
+            openDialog = null;
+            dialogTargets = List.of();
+        }
+    }
+
+    private void clickInDialog(int column, int row) {
+        if (openDialog == null) {
+            return;
+        }
+        // Unlike in the full-screen main window, the positions Lanterna reports for a dialog are the drawn ones.
+        for (ClickTarget target : dialogTargets) {
+            TerminalPosition at = target.component().getGlobalPosition();
+            TerminalSize size = target.component().getSize();
+
+            if (MouseSupport.contains(at.getColumn(), at.getRow(), size.getColumns(), size.getRows(), column, row)) {
+                target.action().click(column - at.getColumn(), row - at.getRow());
+                return;
+            }
+        }
+    }
+
+
 
     // ---------------------------------------------------------------- execution
 
@@ -1202,7 +1254,12 @@ final class MainWindow implements MouseSupport.Handler {
             }
         });
 
-        gui.addWindowAndWait(picker);
+        showDialog(picker, List.of(new ClickTarget(list, (column, row) -> {
+            if (row >= 0 && row < Language.values().length) {
+                list.setSelectedIndex(row);
+                list.runSelectedItem();
+            }
+        })));
         return result.get();
     }
 
