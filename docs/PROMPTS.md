@@ -22,6 +22,7 @@ Plain text files in `src/main/resources/prompts/`, one `<name>.system.txt` and o
 | `analyze` | Code Analysis | English only; the review is always made in English |
 | `translate` | Code Analysis, other languages | Translates the free text of a review; has a glossary for the five other languages |
 | `generate` | Code Generation | One Java source file that compiles on its own |
+| `repair` | Code Generation, after a failed compile check | The same file with the compiler's errors fixed |
 | `tests` | planned Unit Tests mode | JUnit 5 test class |
 | `document` | planned Documentation mode | Markdown (Word / PDF later), headings in six languages |
 | `inventory` | planned Documentation mode | Markdown table of the public API (Excel later) |
@@ -55,6 +56,25 @@ go (it answered "no issues" or copied its own notes). So:
 
 English costs one call, every other language two.
 
+## Compile and repair
+
+The application runs on a JDK, so it can compile what the model wrote before it saves it (`CompileCheck`, the JDK's
+compiler in process, no class path). What happens:
+
+1. Extra `public` top-level types lose their `public`. The file is named after the first type and Java allows one public
+   type per file, but small models mark every type they write as public (3 of 3 JPA samples).
+2. The file is compiled. An error that only says that a library is missing (`package org.springframework... does not
+   exist`, and the "cannot find symbol" errors of the names that import brought in, also `@Override` on a type from such a
+   library) does not count: the application does not have Spring or Jakarta on its class path, so the code can only be
+   checked for everything else. The packages are listed as not checked.
+3. If errors of the code's own remain, the model is called once with `repair.system.txt` and `repair.user.txt`: the file,
+   and the compiler's messages with line number and the text of that line. It must answer with the complete corrected
+   file and change as little as possible. The code is not numbered here, because the answer must be raw source.
+4. The repaired file is used only if it has **fewer** errors and the same main type. A repair that renames the type or adds
+   errors is worse than no repair. The file is saved in any case; the result of the check is printed under it.
+
+The repair is skipped when the file plus the same file again as the answer would not fit the context window.
+
 ## The context window
 
 Ollama cuts a prompt that does not fit its context window, and without a word. With its default settings a probe with a
@@ -83,6 +103,22 @@ Without the notes step it found 56 %. Section titles are present in 15 of 16 run
 compiled with the old prompt, 15 of 15 with the final one (standalone file, imports, no unknown types). The old prompt
 produced no Javadoc.
 
+**Compile and repair** (14 requests, 3 seeds each = 42 files, harder than the five above: a JSON parser, an event bus, a
+rate limiter, a state machine, a JPA repository, a job runner, ...; every file compiled as the application does it):
+
+| | Compiles |
+|---|---|
+| First try, as written by the model | 32 to 33 of 42 (76 to 79 %) |
+| After one repair | 34 of 42 (81 %) |
+| After demoting extra `public` types and one repair | 38 of 42 (90 %) |
+
+The first two rows and the third are separate runs of the same requests and seeds; Ollama is not fully deterministic, so
+a difference of one or two files between identical runs is noise. The repairs that were tried (9 files): 5 fixed all
+errors, 1 some, 3 none. Repair fixes missing imports, a wrong method name or a missing cast. It does not fix what needs a
+different design: the JSON parser never compiled (a `void` used as a value, a checked exception the code does not
+declare), and in a generics error the model often changes the line without removing the cause. That is why a repair is
+accepted only when it has fewer errors. The 5 simple requests above compiled 15 of 15 without any of this.
+
 **Unit tests** (3 classes, compiled and run with JUnit; 2 seeds for the first version, 3 for the final one): 79 % of the
 generated tests passed with the first version, 86 % with the final one. The failures are tests that expect validation
 the code does not have.
@@ -102,8 +138,7 @@ the code does not have.
 ## Limits and next steps
 
 - A thread-safe cache is still written without synchronization by this model, and test expectations for behaviour the
-  code does not show are sometimes wrong. A compile-and-repair loop (the application runs on a JDK, so it can compile
-  in process and hand the errors back) would catch compile errors but not these.
+  code does not show are sometimes wrong. The compile-and-repair step catches compile errors but not these.
 - Files that do not fit the window are skipped; reviewing them method by method would be better.
 - The model lists in `ModelCatalog` are recommendations based on what the models are good at, not measurements. Only
   the 7B model was run here; a 14B or 20B model should be tried before trusting the order.

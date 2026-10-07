@@ -106,6 +106,12 @@ Limits and behaviour worth knowing:
 - These folders are never scanned: `.git`, `.idea`, `.mvn`, `.vscode`, `.gradle`, `target`, `build`, `node_modules`, `logs`.
 - Code generation is **Java only**. A request that names another language (Python, C#, ...) without mentioning Java is
   rejected before the model is called.
+- The generated file is compiled before it is saved. If it has errors, the model fixes them once; the fixed version is
+  used only if it has fewer errors. The file is saved either way, and the line under it says whether it compiles. A
+  library the request names (Spring, Jakarta, ...) is not available to this check: code that uses one is checked for
+  everything else, and the libraries are listed as not checked. The check needs a JDK; the Docker image has only a JRE,
+  where it is skipped with a note. Extra `public` types next to the main one lose their `public`, because a file can
+  hold only one.
 - Relative paths are resolved against the directory the application was started in.
 
 ## Choosing a model

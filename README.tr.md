@@ -60,7 +60,9 @@ konuşur; kaynak kodunuz bilgisayarınızdan çıkmaz, yönetilecek bir API anah
   `node_modules`, ...) atlanır. Bir inceleme kodun ne yaptığını anlatır, sorunları satır numarası ve önem derecesiyle
   listeler ve bir hükümle biter. Modelin bağlam penceresine sığmayan dosyalar sessizce kesilmez, bir mesajla atlanır.
 - **Kod üretim modu.** Bir sınıfı düz metinle anlatın; model Java kaynağı döndürür, Markdown çitleri temizlenir, tip adı
-  bulunur ve dosya `generated/<SınıfAdı>.java` (ya da seçtiğiniz yol) olarak kaydedilir. Var olan dosyanın üzerine yazılmaz.
+  bulunur ve dosya `generated/<SınıfAdı>.java` (ya da seçtiğiniz yol) olarak kaydedilir. Kod kaydedilmeden önce uygulamanın
+  içinde derlenir; hata varsa model derleyicinin mesajlarını bir kez alır ve dosyayı yeniden yazar. Denetimin sonucu
+  dosyanın altında yazılır. Var olan dosyanın üzerine yazılmaz.
 - **Mod başına model.** Her mod için <kbd>Ctrl</kbd>+<kbd>L</kbd> ile farklı bir Ollama modeli seçin. Panel hangi
   modelleri renklendirir: seçili olan yeşil, kurulu olanlar mavi (`+`), eksik olanlar gri (`-`). Seçiminiz oturumlar
   arasında hatırlanır.

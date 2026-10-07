@@ -8,6 +8,22 @@ contain breaking changes.
 
 ## [Unreleased]
 
+### Added
+
+- **Compile check and one repair for generated code.** The generated file is compiled in process (the JDK's compiler, no
+  class path) before it is saved. If it has errors of its own, the model gets the file and the compiler's messages once
+  and writes it again; the second version is used only if it has fewer errors and the same main type. The result is
+  printed under the file (`Compile check passed.`, or a warning that lists the remaining errors). Errors that only say
+  that a library is missing (Spring, Jakarta, ...) do not count; those libraries are listed as not checked. Where no
+  compiler exists (the Docker image has a JRE) the check is skipped with a note. With the local 7B model, 38 of 42 files
+  of 14 harder requests compiled, 33 before. See [docs/PROMPTS.md](docs/PROMPTS.md).
+- The prompts `repair.system.txt` and `repair.user.txt`.
+
+### Changed
+
+- A helper type that the model writes next to the main type loses its `public`, because a file can hold only one public
+  type and the file is named after the first.
+
 ## [0.4.0] - 2026-10-08
 
 ### Added
