@@ -58,7 +58,7 @@ public class GenerateModeHandler implements IModeHandler {
         }
 
         console.step(messages.get("generate.working"));
-        String raw = ai.forMode(AppMode.CODE_GENERATION).generateCode(messages.language().englishName(), prompt);
+        String raw = ai.forMode(AppMode.CODE_GENERATION).generateCode(prompt);
         if (console.isCancelled()) {
             return; // iptal edildi: dosya yazılmaz
         }

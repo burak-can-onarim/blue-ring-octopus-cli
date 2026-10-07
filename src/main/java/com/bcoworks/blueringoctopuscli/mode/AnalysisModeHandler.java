@@ -3,7 +3,8 @@ package com.bcoworks.blueringoctopuscli.mode;
 import com.bcoworks.blueringoctopuscli.context.AppMode;
 import com.bcoworks.blueringoctopuscli.i18n.Messages;
 import com.bcoworks.blueringoctopuscli.model.AiServiceRegistry;
-import com.bcoworks.blueringoctopuscli.service.ICodeAnalyzerService;
+import com.bcoworks.blueringoctopuscli.service.CodeAssistant;
+import com.bcoworks.blueringoctopuscli.service.ContextBudget;
 import com.bcoworks.blueringoctopuscli.service.SourceCodeScanner;
 import com.bcoworks.blueringoctopuscli.util.PathUtils;
 import lombok.RequiredArgsConstructor;
@@ -53,7 +54,7 @@ public class AnalysisModeHandler implements IModeHandler {
         int total = files.size();
         console.println(messages.get("analysis.found", total, target));
 
-        ICodeAnalyzerService service = ai.forMode(AppMode.CODE_ANALYSIS);
+        CodeAssistant assistant = ai.forMode(AppMode.CODE_ANALYSIS);
 
         for (int i = 0; i < total; i++) {
             if (console.isCancelled()) {
@@ -72,8 +73,13 @@ public class AnalysisModeHandler implements IModeHandler {
                 if (code.isBlank()) {
                     continue;
                 }
+                if (!ContextBudget.fits(ai.numCtx(), code)) {
+                    console.println(messages.get("analysis.tooLarge", file.getFileName(),
+                            ContextBudget.estimateTokens(code), ContextBudget.codeBudget(ai.numCtx())));
+                    continue;
+                }
                 console.step(messages.get("analysis.analyzing", i + 1, total, file.getFileName()));
-                String result = service.analyze(messages.language().englishName(), code);
+                String result = assistant.analyze(file.getFileName().toString(), code);
                 console.println("\n--- " + file.getFileName() + " ---\n" + result);
             } catch (IOException e) {
                 console.println(messages.get("analysis.unreadable", file.getFileName(), e.getMessage()));

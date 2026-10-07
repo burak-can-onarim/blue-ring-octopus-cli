@@ -85,7 +85,7 @@ and UTF-8 support.
 
 Typing `exit` (or `cikis`) in the prompt and pressing <kbd>Enter</kbd> also quits.
 
-**Mouse.** The mouse does a few things, on purpose: the wheel scrolls the Output box and a long prompt; a left click focuses the Prompt or Path box, switches the mode on the arrows of the Mode box and focuses the Model panel (a double click on a model chooses it); and dragging in the Output box selects text, a double click selects a word and a triple click a line. Touchpads (smooth, fractional scrolling) work too. Everything else (the keys of the model panel, dialogs) stays on the keyboard. Mouse support currently exists in the Windows window only; in a Linux/macOS terminal the mouse keeps its normal behaviour, so you can still select and copy text with it.
+**Mouse.** The mouse does a few things, on purpose: the wheel scrolls the Output box and a long prompt; a left click focuses the Prompt or Path box, switches the mode on the arrows of the Mode box and focuses the Model panel (a double click on a model chooses it); and dragging in the Output box selects text, a double click selects a word and a triple click a line. Touchpads (smooth, fractional scrolling) work too. The buttons of the exit and cancel dialogs and the rows of the language picker can be clicked too. Everything else (the keys of the model panel) stays on the keyboard. Mouse support currently exists in the Windows window only; in a Linux/macOS terminal the mouse keeps its normal behaviour, so you can still select and copy text with it.
 
 ## Modes
 
@@ -100,11 +100,13 @@ Switch modes with <kbd>Tab</kbd>. The hint line above the input shows what the c
 
 Limits and behaviour worth knowing:
 
-- Files larger than **64 KB** are skipped (and listed) so the local model is not overloaded.
+- Files larger than **64 KB**, or too big for the model's context window (see [Configuration reference](#configuration-reference)),
+  are skipped and listed with a message; the model would otherwise see only a fragment of them.
+- A review is written in English first and translated for the other languages, see [PROMPTS.md](PROMPTS.md).
 - These folders are never scanned: `.git`, `.idea`, `.mvn`, `.vscode`, `.gradle`, `target`, `build`, `node_modules`, `logs`.
 - Code generation is **Java only**. A request that names another language (Python, C#, ...) without mentioning Java is
   rejected before the model is called.
-- Relative paths are resolved against the working directory shown in the title of the Path field.
+- Relative paths are resolved against the directory the application was started in.
 
 ## Choosing a model
 
@@ -121,9 +123,11 @@ Each mode remembers its own model, so you can use a small fast model for reviews
   <br><sub>Code Generation mode: the selected model (green) is not installed, the installed one (blue) can be chosen, the rest are grey.</sub>
 </p>
 
-The list contains the suggested models (`qwen2.5-coder`, `qwen2.5-coder:14b`, `qwen3-coder:30b`,
-`deepseek-coder-v2:16b`, `llama3.1`, `codellama`, `gpt-oss:20b`) plus anything else you have installed.
-Your choice is stored in `~/.octopus-cli/models.properties`.
+The list has suggestions for the mode, best first (for example `qwen3-coder:30b` and `qwen2.5-coder:14b` for code
+generation, `gpt-oss:20b` for reviews and documentation), plus anything else you have installed. The order is a
+recommendation, not a measurement: the prompts were tuned with `qwen2.5-coder` (7B), which fits a graphics card with
+8 GB. Bigger models need more memory and are slower; try one before you rely on it. Your choice is stored in
+`~/.octopus-cli/models.properties`.
 
 ## One-shot commands
 
@@ -177,6 +181,8 @@ The model is asked to answer in the same language, and so are the mode names, hi
 | `logging.file.name` | `LOGGING_FILE_NAME` | `logs/octopus.log` |
 | Per-mode model | UI model panel | stored in `~/.octopus-cli/models.properties` |
 | `OCTOPUS_LANG` | environment variable, or <kbd>Ctrl</kbd>+<kbd>G</kbd> in the UI | `en`; the UI choice is stored in `~/.octopus-cli/settings.properties` |
+| `octopus.model.num-ctx` | `OCTOPUS_MODEL_NUM_CTX` | `8192` (tokens; the context window asked from Ollama, whose own default cuts long prompts silently) |
+| `octopus.model.max-tokens` | `OCTOPUS_MODEL_MAX_TOKENS` | `4096` (upper limit for one answer) |
 
 Any Spring Boot property can be overridden with an environment variable (dots and dashes become underscores, upper
 case) or with `--property=value` on the command line.

@@ -58,7 +58,9 @@ manage and no per-token bill.
 
 - **Code analysis mode.** Scans a file or a whole directory for `.java` files and reviews each one for security
   problems, bugs, performance risks and Clean Code violations. Build and tooling folders (`.git`, `target`,
-  `node_modules`, ...) are skipped, and files larger than 64 KB are never sent to the model.
+  `node_modules`, ...) are skipped. A review explains what the code does, lists the problems with line numbers and
+  severity, and ends with a verdict. Files that do not fit the model's context window are skipped with a message
+  instead of being cut silently.
 - **Code generation mode.** Describe a class in plain language; the model returns Java source, Markdown fences are
   stripped, the type name is detected and the file is written to `generated/<ClassName>.java` (or a path you choose).
   An existing file is never overwritten.
@@ -260,7 +262,7 @@ Ideas are not commitments. If one matters to you, [open an issue](https://github
 | `src/main/java/.../model` | Ollama client registry, installed-model discovery, per-mode settings |
 | `src/main/java/.../tui` | Lanterna user interface |
 | `src/main/java/.../cli` | Spring Shell one-shot commands |
-| `src/main/java/.../service` | AI prompts (`ICodeAnalyzerService`) and the source scanner |
+| `src/main/java/.../service` | The model calls (`CodeAssistant`), the prompt files (`src/main/resources/prompts`, see [PROMPTS.md](docs/PROMPTS.md)) and the source scanner |
 | `docs/` | Architecture, usage guide and image assets |
 
 Java 25 is required. CI runs the build and the tests on Linux and Windows for every push and pull request.
