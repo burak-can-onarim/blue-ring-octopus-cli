@@ -8,6 +8,8 @@ contain breaking changes.
 
 ## [Unreleased]
 
+## [0.1.6] - 2026-10-07
+
 ### Changed
 
 - The key hints at the bottom of the window are redesigned: two rows (**Giriş** and **Gezinme**) with the keys
@@ -117,7 +119,8 @@ contain breaking changes.
 - `start-agent.bat` launcher for Windows with a model picker.
 - Windows archive with a bundled JRE.
 
-[Unreleased]: https://github.com/burak-can-onarim/blue-ring-octopus-cli/compare/v0.1.5...HEAD
+[Unreleased]: https://github.com/burak-can-onarim/blue-ring-octopus-cli/compare/v0.1.6...HEAD
+[0.1.6]: https://github.com/burak-can-onarim/blue-ring-octopus-cli/compare/v0.1.5...v0.1.6
 [0.1.5]: https://github.com/burak-can-onarim/blue-ring-octopus-cli/compare/v0.1.3...v0.1.5
 [0.1.3]: https://github.com/burak-can-onarim/blue-ring-octopus-cli/compare/v0.1.2...v0.1.3
 [0.1.2]: https://github.com/burak-can-onarim/blue-ring-octopus-cli/compare/v0.1.0...v0.1.2
