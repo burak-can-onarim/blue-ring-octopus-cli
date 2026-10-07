@@ -11,7 +11,8 @@ contain breaking changes.
 ### Changed
 
 - The key hints at the bottom of the window are redesigned: two rows (**Giriş** and **Gezinme**) with the keys
-  highlighted and fewer items. On a narrow window the last items are dropped instead of being cut in the middle.
+  highlighted, fewer items and " · " separators that line up in columns across both rows. On a narrow window the last
+  columns are dropped instead of being cut in the middle.
 
 ## [0.1.5] - 2026-10-06
 

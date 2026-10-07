@@ -326,28 +326,28 @@ final class MainWindow implements MouseSupport.Handler {
         statusRow.addComponent(stepBox);
         statusRow.addComponent(activeModelBox);
 
-        KeyHintBar keysLine1 = new KeyHintBar("Giriş", List.of(
-                new KeyHintBar.Hint("Enter", "Gönder"),
-                new KeyHintBar.Hint("Shift+Enter", "Yeni satır"),
-                new KeyHintBar.Hint("↑↓", "Geçmiş"),
-                new KeyHintBar.Hint("Ctrl+V", "Yapıştır"),
-                new KeyHintBar.Hint("Ctrl+C", "Kopyala")));
-        KeyHintBar keysLine2 = new KeyHintBar("Gezinme", List.of(
-                new KeyHintBar.Hint("Tab", "Mod"),
-                new KeyHintBar.Hint("Ctrl+L", "Model"),
-                new KeyHintBar.Hint("Ctrl+P", "Prompt/Path"),
-                new KeyHintBar.Hint("PgUp/PgDn", "Kaydır"),
-                new KeyHintBar.Hint("Esc", "İptal / Çıkış")));
-        keysLine1.setLayoutData(fill());
-        keysLine2.setLayoutData(fill());
+        KeyHintBar keyHints = new KeyHintBar(List.of(
+                // Sütunlar satırlar arasında hizalanır; benzer genişlikteki maddeler aynı sütuna konur ki boşluklar dengeli kalsın.
+                new KeyHintBar.Row("Giriş", List.of(
+                        new KeyHintBar.Hint("Enter", "Gönder"),
+                        new KeyHintBar.Hint("Shift+Enter", "Yeni satır"),
+                        new KeyHintBar.Hint("Ctrl+V", "Yapıştır"),
+                        new KeyHintBar.Hint("Ctrl+C", "Kopyala"),
+                        new KeyHintBar.Hint("↑↓", "Geçmiş"))),
+                new KeyHintBar.Row("Gezinme", List.of(
+                        new KeyHintBar.Hint("Tab", "Mod"),
+                        new KeyHintBar.Hint("Ctrl+P", "Prompt/Path"),
+                        new KeyHintBar.Hint("Ctrl+L", "Model"),
+                        new KeyHintBar.Hint("Esc", "İptal / Çıkış"),
+                        new KeyHintBar.Hint("PgUp/PgDn", "Kaydır")))));
+        keyHints.setLayoutData(fill());
 
         // --- uygulama çerçevesi
         Panel content = new Panel(linear(Direction.VERTICAL, 0));
         content.addComponent(bannerBox);
         content.addComponent(mainRow);
         content.addComponent(statusRow);
-        content.addComponent(keysLine1);
-        content.addComponent(keysLine2);
+        content.addComponent(keyHints);
         Border frame = content.withBorder(Borders.doubleLine(" Blue Ring Octopus CLI "));
 
         window.setHints(List.of(Window.Hint.FULL_SCREEN, Window.Hint.NO_DECORATIONS, Window.Hint.NO_POST_RENDERING));
