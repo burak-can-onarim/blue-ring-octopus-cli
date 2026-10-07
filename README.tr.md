@@ -140,9 +140,10 @@ Uygulamayı **argümansız** çalıştırınca arayüz açılır. <kbd>Tab</kbd>
 | <kbd>Ctrl</kbd>+<kbd>L</kbd> | Geçerli mod için model panelini açar |
 | <kbd>Ctrl</kbd>+<kbd>G</kbd> | Arayüz dilini seçer (model de bu dilde yanıt verir) |
 | <kbd>Ctrl</kbd>+<kbd>V</kbd> / <kbd>Shift</kbd>+<kbd>Insert</kbd> | Panodan yapıştırır |
-| <kbd>Ctrl</kbd>+<kbd>C</kbd> | Son çıktıyı panoya kopyalar |
-| <kbd>PgUp</kbd> / <kbd>PgDn</kbd>, fare tekerleği | Diyaloğu kaydırır (tekerlek uzun prompt'u da kaydırır) |
-| Sol tık | Prompt ya da Path alanına odaklanır (imleci de yerleştirir) |
+| <kbd>Ctrl</kbd>+<kbd>C</kbd> | Seçili metni, seçim yoksa son çıktıyı panoya kopyalar |
+| <kbd>PgUp</kbd> / <kbd>PgDn</kbd>, fare tekerleği | Çıktıyı kaydırır (tekerlek uzun prompt'u da kaydırır) |
+| Sol tık | Prompt ya da Path alanına odaklanır (imleci de yerleştirir); Mod kutusundaki `‹` `›` oklarında modu değiştirir; Model panelinde panele odaklanır (bir modele çift tık onu seçer) |
+| Sürükle, çift veya üç tık | Çıktı kutusunda metni, bir sözcüğü veya bir satırı seçer |
 | <kbd>Esc</kbd> | Çalışan işlemi iptal eder ya da çıkış sorar |
 
 ### Tek seferlik komutlar

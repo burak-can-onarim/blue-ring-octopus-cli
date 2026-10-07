@@ -39,7 +39,7 @@ java --enable-native-access=ALL-UNNAMED -jar blue-ring-octopus-cli.jar
 ┌ Blue Ring Octopus CLI ───────────────────────────────────────────────────────┐
 │ ┌ banner ──────────────────────────────────────────────────────────────────┐ │
 │ └──────────────────────────────────────────────────────────────────────────┘ │
-│ ┌ Dialog ─────────────────────────────────────────────┐ ┌ Model ──────────┐ │
+│ ┌ Output ─────────────────────────────────────────────┐ ┌ Model ──────────┐ │
 │ │ requests and answers of the session                 │ │ model for the   │ │
 │ └─────────────────────────────────────────────────────┘ │ current mode    │ │
 │ ┌ Prompt ─────────────────────────────────────────────┐ │ ● selected      │ │
@@ -52,11 +52,11 @@ java --enable-native-access=ALL-UNNAMED -jar blue-ring-octopus-cli.jar
 └──────────────────────────────────────────────────────────────────────────────┘
 ```
 
-The **Dialog** box is a conversation: every request appears under a "You" heading with the mode and model, and
+The **Output** box is the conversation: every request appears under a "You" heading with the mode and model, and
 the answer under "Octopus". It starts empty. The history of the session stays in memory (up to 5000 lines) and is gone
-when you quit. The view follows the newest message; scroll up to read earlier ones and it stops following until you
-scroll back to the bottom. The **Prompt** box below it is where you type; the line above the input tells what the
-current mode expects.
+when you quit. Every new message scrolls the view to the bottom; scroll up to read earlier ones. You can select text
+in it with the mouse and copy it (see Mouse below). The **Prompt** box below it is where you type; the line above the
+input tells what the current mode expects.
 
 On Windows the UI opens in its own window (the title is *Blue Ring Octopus CLI*); closing it with the **X** button
 asks for confirmation. On Linux and macOS it draws inside the current terminal, so use a terminal with true-colour
@@ -74,15 +74,18 @@ and UTF-8 support.
 | <kbd>Ctrl</kbd>+<kbd>L</kbd> | Open (or close) the model panel for the current mode |
 | <kbd>Ctrl</kbd>+<kbd>G</kbd> | Choose the interface language, see [Language](#language) |
 | <kbd>Ctrl</kbd>+<kbd>V</kbd>, <kbd>Shift</kbd>+<kbd>Insert</kbd> | Paste. In the Path field, surrounding quotes from Windows "Copy as path" are removed |
-| <kbd>Ctrl</kbd>+<kbd>C</kbd> | Copy the output of the last run to the clipboard |
+| <kbd>Ctrl</kbd>+<kbd>C</kbd> | Copy the selected text, or the output of the last run when nothing is selected |
 | <kbd>PgUp</kbd> / <kbd>PgDn</kbd> | Scroll the conversation while typing |
 | Mouse wheel | Over the conversation: scroll it. Over the prompt: scroll a long prompt without moving the caret |
 | Left click | On the Prompt or Path box: focus it (clicking inside the text also places the caret) |
+| Left click | On an arrow (<kbd>‹</kbd> <kbd>›</kbd>) of the Mode box: previous / next mode |
+| Left click | On the Model panel: focus it, and on a model move the cursor there. Double click on a model: choose it |
+| Drag, double click, triple click | In the Output box: select text, a word, a line. <kbd>Ctrl</kbd>+<kbd>C</kbd> copies it |
 | <kbd>Esc</kbd> | While a task runs: ask to cancel it. Otherwise: ask to exit |
 
 Typing `exit` (or `cikis`) in the prompt and pressing <kbd>Enter</kbd> also quits.
 
-**Mouse.** Only three things respond to the mouse, on purpose: the wheel over the Dialog box, the wheel over a long prompt, and a left click on the Prompt or Path box. Touchpads (smooth, fractional scrolling) work too. Everything else (modes, the model list, dialogs) stays on the keyboard. Mouse support currently exists in the Windows window only; in a Linux/macOS terminal the mouse keeps its normal behaviour, so you can still select and copy text with it.
+**Mouse.** The mouse does a few things, on purpose: the wheel scrolls the Output box and a long prompt; a left click focuses the Prompt or Path box, switches the mode on the arrows of the Mode box and focuses the Model panel (a double click on a model chooses it); and dragging in the Output box selects text, a double click selects a word and a triple click a line. Touchpads (smooth, fractional scrolling) work too. Everything else (the keys of the model panel, dialogs) stays on the keyboard. Mouse support currently exists in the Windows window only; in a Linux/macOS terminal the mouse keeps its normal behaviour, so you can still select and copy text with it.
 
 ## Modes
 

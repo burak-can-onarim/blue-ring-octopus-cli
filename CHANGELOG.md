@@ -8,6 +8,25 @@ contain breaking changes.
 
 ## [Unreleased]
 
+### Added
+
+- **Select and copy text from the Output box with the mouse.** Drag to select, double click for a word, triple click
+  for a line (wrapped rows are joined again). `Ctrl+C` copies the selection, or the last output when nothing is
+  selected.
+- **Mouse access to the model panel and the modes.** A left click on the Model panel focuses it and moves the cursor to
+  the clicked model; a double click chooses it. The `‹` `›` arrows of the Mode box switch to the previous / next mode.
+- A new pixel-art banner: the blue-ringed octopus next to the name in a pixel font.
+
+### Changed
+
+- The **Dialog** box is now called **Output** (Çıktı, Ausgabe, Sortie, Output, Salida). Every new message scrolls it to
+  the bottom, also after scrolling up. `PgUp` / `PgDn` scroll it while the model panel is focused.
+- The Path box title is just "Path"; it used to show the working directory, which never followed the typed path.
+- The banner tagline reads "Local-first AI code analysis & generation" (it was "Local AI Code Assistant").
+- Turkish texts: "Kod Generate" is now "Kod Üretimi" and "Döküman Hazırlama" is "Doküman Hazırlama".
+- The mode constants have English names (`CODE_ANALYSIS`, `CODE_GENERATION`, `DOCUMENTATION`, `UNIT_TESTS`). A
+  `models.properties` written by an older version is still read, and rewritten with the new names on the next save.
+
 ## [0.2.0] - 2026-10-07
 
 ### Added
