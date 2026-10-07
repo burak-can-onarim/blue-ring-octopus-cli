@@ -8,6 +8,35 @@ contain breaking changes.
 
 ## [Unreleased]
 
+### Added
+
+- **Prompts for the four modes** (`src/main/resources/prompts/`), tuned and measured against the local model, see
+  [docs/PROMPTS.md](docs/PROMPTS.md). The prompts for the planned Unit Tests and Documentation modes (Word/PDF text and
+  an Excel-ready API table) are ready, the modes themselves are not.
+- `octopus.model.num-ctx` (default 8192) and `octopus.model.max-tokens` (default 4096), also as the environment
+  variables `OCTOPUS_MODEL_NUM_CTX` and `OCTOPUS_MODEL_MAX_TOKENS`.
+
+### Changed
+
+- **Code analysis explains and points at lines.** A review has an overview of what the code does, numbered findings
+  with severity, line, consequence and fix, and a verdict, as plain text. The code is sent with line numbers. It is
+  shorter than before (about a third) and invents far fewer problems, on a clean file as well.
+- **Reviews in other languages** are made in English first; the application then puts the frame of the review (titles,
+  severity, line, Consequence, Fix) into the selected language and a second call translates only the free text, with a
+  glossary of technical terms. If the translation breaks the frame, the localized English review is shown.
+- **Code generation** must produce one file that stands alone (imports, no unknown types, helper types nested) and
+  documents the public API; comments are written in the selected language.
+- The model panel lists suggestions per mode, best first (`gpt-oss:20b` for reviews and documentation,
+  `qwen3-coder:30b` for generation and tests); `qwen2.5-coder` is in every list.
+- The model calls go through `CodeAssistant` instead of LangChain4j annotation templates.
+
+### Fixed
+
+- The exit popup (and the cancel popup and the language picker) could not be used with the mouse. The buttons and the
+  language rows can be clicked now.
+- Ollama's default context window cut long files silently, so a big class was reviewed from a fragment. The window is
+  asked for explicitly now and a file that does not fit is skipped with a message that names the setting.
+
 ## [0.3.0] - 2026-10-07
 
 ### Added

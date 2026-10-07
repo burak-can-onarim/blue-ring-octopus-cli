@@ -40,9 +40,12 @@ changing the mode layer or the UI.
 3. **Write or update tests.** Logic that does not need a UI or a model should have a unit test. The existing tests in
    `src/test/java` show the style (JUnit 5, no Spring context unless it is really needed).
 4. **Run `./mvnw verify`** and make sure it passes.
-5. **Update the documentation** (`README`, `docs/`) and add a line under `## [Unreleased]` in
+5. **Changing a prompt?** The prompts are text files in `src/main/resources/prompts/`. Read
+   [docs/PROMPTS.md](docs/PROMPTS.md) first: a prompt has to be measured on several samples and seeds, not judged on one
+   answer.
+6. **Update the documentation** (`README`, `docs/`) and add a line under `## [Unreleased]` in
    [CHANGELOG.md](CHANGELOG.md) when the change is visible to users.
-6. **Open a pull request** and fill in the template. CI must be green before a review.
+7. **Open a pull request** and fill in the template. CI must be green before a review.
 
 ### Code style
 

@@ -57,7 +57,8 @@ konuşur; kaynak kodunuz bilgisayarınızdan çıkmaz, yönetilecek bir API anah
 
 - **Kod analizi modu.** Bir dosyayı ya da bir dizini `.java` dosyaları için tarar; her birini güvenlik açıkları, hatalar,
   performans riskleri ve Clean Code ihlalleri açısından inceler. Derleme ve araç klasörleri (`.git`, `target`,
-  `node_modules`, ...) atlanır; 64 KB'tan büyük dosyalar modele hiç gönderilmez.
+  `node_modules`, ...) atlanır. Bir inceleme kodun ne yaptığını anlatır, sorunları satır numarası ve önem derecesiyle
+  listeler ve bir hükümle biter. Modelin bağlam penceresine sığmayan dosyalar sessizce kesilmez, bir mesajla atlanır.
 - **Kod üretim modu.** Bir sınıfı düz metinle anlatın; model Java kaynağı döndürür, Markdown çitleri temizlenir, tip adı
   bulunur ve dosya `generated/<SınıfAdı>.java` (ya da seçtiğiniz yol) olarak kaydedilir. Var olan dosyanın üzerine yazılmaz.
 - **Mod başına model.** Her mod için <kbd>Ctrl</kbd>+<kbd>L</kbd> ile farklı bir Ollama modeli seçin. Panel hangi
@@ -259,7 +260,7 @@ Fikirler taahhüt değildir. Biri sizin için önemliyse nedenini anlatan bir
 | `src/main/java/.../model` | Ollama istemci kaydı, kurulu model keşfi, mod başına ayarlar |
 | `src/main/java/.../tui` | Lanterna kullanıcı arayüzü |
 | `src/main/java/.../cli` | Spring Shell tek seferlik komutlar |
-| `src/main/java/.../service` | Yapay zekâ promptları (`ICodeAnalyzerService`) ve kaynak tarayıcı |
+| `src/main/java/.../service` | Model çağrıları (`CodeAssistant`), prompt dosyaları (`src/main/resources/prompts`, bkz. [PROMPTS.md](docs/PROMPTS.md)) ve kaynak tarayıcı |
 | `docs/` | Mimari, kullanım kılavuzu ve görsel dosyalar |
 
 Java 25 gerekir. CI, her push ve pull request için derlemeyi ve testleri Linux ve Windows'ta çalıştırır.

@@ -59,7 +59,7 @@ flowchart TB
 
     subgraph ai["AI layer"]
         registry["AiServiceRegistry"]
-        service["ICodeAnalyzerService<br/>(prompt templates)"]
+        service["CodeAssistant · PromptLibrary<br/>(prompts/*.txt)"]
         models["ModelSettings · InstalledModels · ModelCatalog"]
     end
 
@@ -90,7 +90,7 @@ The UI picks the handler for the current mode through `ModeDispatcher`; the one-
 | `i18n` | `Language` (the six interface languages) and `Messages` (every text shown to the user, loaded from `i18n/messages_<code>.properties`). |
 | `mode` | One handler per mode, the dispatcher, the `ModeRequest` value object and the `IModeConsole` abstraction. |
 | `model` | Everything about *which* model is used: client registry, installed-model discovery, per-mode settings, suggestions. |
-| `service` | `ICodeAnalyzerService` (the LLM prompts) and `SourceCodeScanner`. |
+| `service` | `CodeAssistant` (what is asked of the model), `PromptLibrary` (the prompt files), `ReviewLocalizer`, `ContextBudget` and `SourceCodeScanner`. See [PROMPTS.md](PROMPTS.md). |
 | `tui` | The Lanterna user interface. |
 | `util` | `PathUtils`: quote stripping and relative-path resolution. |
 
@@ -167,18 +167,19 @@ sequenceDiagram
     A->>S: scanJavaFiles(path)
     S-->>A: .java files (ignored folders removed)
     A->>R: forMode(CODE_ANALYSIS)
-    R-->>A: ICodeAnalyzerService for the selected model
+    R-->>A: CodeAssistant for the selected model
     loop every file
-        A->>A: cancelled? skip files over 64 KB or blank
-        A->>M: analyze(code) via LangChain4j
+        A->>A: cancelled? skip blank files, files over 64 KB or too big for the context window
+        A->>M: analyze(file): English review, translated for other languages
         M-->>A: review text
         A-->>W: console.println(review) / progress(i, total)
     end
     A-->>W: "Analiz tamamlandı"
 ```
 
-Guards: files over **64 KB** are skipped and reported, blank files are ignored, a missing path is reported instead of
-failing, and the loop checks for cancellation before every file.
+Guards: files over **64 KB** or too big for the model's context window (`octopus.model.num-ctx`) are skipped and
+reported, blank files are ignored, a missing path is reported instead of failing, and the loop checks for cancellation
+before every file.
 
 ## Flow: code generation
 
@@ -247,10 +248,11 @@ an embedded store such as SQLite and an ADR describing why a file is no longer e
 To add a new mode (for example the planned documentation writer):
 
 1. Add a constant to `AppMode` and its `mode.<NAME>.name`, `.prompt` and `.path` texts to every language file.
-2. Add a prompt method to `ICodeAnalyzerService` (or a new service interface).
+2. Add a prompt (`<name>.system.txt` and `<name>.user.txt` under `src/main/resources/prompts/`) and a method on
+   `CodeAssistant` that renders it. Read [PROMPTS.md](PROMPTS.md) first.
 3. Implement `IModeHandler` (or replace the `PlannedModeHandler` subclass for that mode). Use `IModeConsole` for all
    output and honour `isCancelled()`.
 4. Add unit tests; `ModeDispatcher` already guarantees the wiring is complete.
 
 To support another model backend, create the chat model in `AiServiceRegistry.create(...)`; the rest of the code only
-sees `ICodeAnalyzerService`.
+sees `CodeAssistant`.
