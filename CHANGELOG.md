@@ -18,11 +18,22 @@ contain breaking changes.
   compiler exists (the Docker image has a JRE) the check is skipped with a note. With the local 7B model, 38 of 42 files
   of 14 harder requests compiled, 33 before. See [docs/PROMPTS.md](docs/PROMPTS.md).
 - The prompts `repair.system.txt` and `repair.user.txt`.
+- **Files that do not fit the model's window are reviewed in parts instead of being skipped.** `CodeSplitter` cuts the
+  file by method (a small scanner that skips comments, strings and text blocks, so it also works on code that does not
+  compile). Every part holds the outline of the whole file and writes out only its own members, with the line numbers of
+  the file, and the prompt (`analyze.part.user.txt`) asks the model to review only those lines. A method larger than the
+  window is cut into overlapping pieces. Each part is announced in the output and has its own overview, findings and
+  summary. In a trial with the 7B model the recall of known problems was the same as for the whole file (within noise),
+  but more parts produce more, mostly generic, findings, so fewer and larger parts are better. See
+  [docs/PROMPTS.md](docs/PROMPTS.md).
 
 ### Changed
 
 - A helper type that the model writes next to the main type loses its `public`, because a file can hold only one public
   type and the file is named after the first.
+- The file size limit of the review goes from 64 KB to 512 KB, because big files are no longer skipped for not fitting.
+  A window too small to hold even the outline and a few lines still skips the file, with the hint to raise
+  `octopus.model.num-ctx`.
 
 ## [0.4.0] - 2026-10-08
 

@@ -20,6 +20,7 @@ Plain text files in `src/main/resources/prompts/`, one `<name>.system.txt` and o
 | Prompt | Used by | Notes |
 |---|---|---|
 | `analyze` | Code Analysis | English only; the review is always made in English |
+| `analyze.part` (user prompt only) | Code Analysis, a file that does not fit | Same system prompt as `analyze`; names the lines to review |
 | `translate` | Code Analysis, other languages | Translates the free text of a review; has a glossary for the five other languages |
 | `generate` | Code Generation | One Java source file that compiles on its own |
 | `repair` | Code Generation, after a failed compile check | The same file with the compiler's errors fixed |
@@ -79,9 +80,27 @@ The repair is skipped when the file plus the same file again as the answer would
 
 Ollama cuts a prompt that does not fit its context window, and without a word. With its default settings a probe with a
 65,000 character prompt was read as only 2,050 tokens. The application therefore sets `num_ctx`
-(`octopus.model.num-ctx`, default 8192, which still fits a 7B model entirely on an 8 GB graphics card) and skips a file
-whose estimated size does not fit, with a message that names the setting. `ContextBudget` keeps 3,000 tokens free for
-the instructions, the notes and the answer, and its estimate is deliberately cautious.
+(`octopus.model.num-ctx`, default 8192, which still fits a 7B model entirely on an 8 GB graphics card) and reviews a file
+whose estimated size does not fit in parts (below). `ContextBudget` keeps 3,000 tokens free for the instructions, the
+notes and the answer, and its estimate is deliberately cautious.
+
+### Files that do not fit: a review in parts
+
+`CodeSplitter` cuts the file by member (method, field, initializer, nested type) so that every part fits. Each part is
+reviewed on its own, with the same system prompt as a whole file (`analyze.system.txt`) and its own user prompt
+(`analyze.part.user.txt`):
+
+- The part contains **the outline of the whole file** (imports, the head of each type, the signature of every member that
+  is not in this part, `| ...` for what was left out) and **its own members in full**. The model sees the fields and the
+  other methods a method works with, but not their bodies.
+- Lines keep the **numbers of the file**, so a finding points at the right line.
+- The user prompt names the lines to review and says that the rest is context, because the outline of a part is also
+  seen by the other parts and would otherwise be reviewed again. The prompt of a whole file is untouched.
+- When the outline would take more than half of the window, it shrinks step by step (without imports, then only the heads
+  of the types). A member that does not fit at all is cut into pieces of lines that overlap by 8 lines, each with the
+  signature of the member.
+- Every part has its own overview, findings and summary and is announced in the output. For another language than English
+  every part is translated by the second call as usual.
 
 ## What was measured
 
@@ -98,6 +117,23 @@ The samples are small Java files with known problems plus one clean file that mu
 The final prompt finds somewhat fewer of the seeded problems than the old, long one, but it is a third of the length,
 points at lines, and invents far less. It is the best balance found with this model; a larger model will do better.
 Without the notes step it found 56 %. Section titles are present in 15 of 16 runs.
+
+**Review in parts** (one class with 12 of the known problems from the three samples plus nine clean methods, 1,700 tokens;
+`qwen2.5-coder` 7B, 3 seeds; run as a whole in the 8192 window, then cut by `CodeSplitter` with a budget of 1,200 tokens
+(2 parts) and 500 tokens (4 parts), the production code path):
+
+| | Known problems found (of 12, per seed) | Recall | Rated findings per run | Words per run |
+|---|---|---|---|---|
+| Whole file | 5, 6, 4 | 0.42 | 5, 7, 4 | 227 |
+| 2 parts | 6, 5, 8 | 0.53 | 6, 12, 7 | 320 |
+| 4 parts | 2, 6, 6 | 0.39 | 5, 13, 13 | 585 |
+
+With 3 seeds and 12 problems the differences in recall are within noise, so the honest reading is: **reviewing in parts
+does not lose recall, and it does not gain any either**. What does change is the amount: the more parts, the more findings,
+and the extra ones are mostly generic ("the return value of X can be null" on clean methods). The 4-part runs reported
+13 findings for 6 real ones. So fewer, larger parts are better; raise `octopus.model.num-ctx` before accepting many small
+parts. A trial on a real 22 KB file (`CodeSplitter.java`, 2 parts, 7B) ran through, but the answer was poor: one part said
+"no issues", the other listed three non-findings. That is the 7B model, as before, not the cutting.
 
 **Code generation** (5 requests, compiled with `javac`; 2 seeds for the old prompt, 3 for the final one): 8 of 10
 compiled with the old prompt, 15 of 15 with the final one (standalone file, imports, no unknown types). The old prompt
@@ -139,7 +175,12 @@ the code does not have.
 
 - A thread-safe cache is still written without synchronization by this model, and test expectations for behaviour the
   code does not show are sometimes wrong. The compile-and-repair step catches compile errors but not these.
-- Files that do not fit the window are skipped; reviewing them method by method would be better.
+- A review in parts cannot see a problem that needs two bodies that are in different parts (a field written in one
+  method and read unsynchronized in another, a resource opened in one method and closed in another). It also costs one
+  model call per part, and its reports are not merged: there is no overall verdict, and a problem that concerns the shared
+  fields can be reported by several parts. Ideas that were considered but not built: grouping methods that share fields
+  into the same part, a last call that merges and de-duplicates the findings of all parts, and reviewing only the risky
+  methods of a very big file.
 - The model lists in `ModelCatalog` are recommendations based on what the models are good at, not measurements. Only
   the 7B model was run here; a 14B or 20B model should be tried before trusting the order.
 

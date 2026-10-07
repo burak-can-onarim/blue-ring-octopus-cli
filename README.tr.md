@@ -50,7 +50,7 @@ konuşur; kaynak kodunuz bilgisayarınızdan çıkmaz, yönetilecek bir API anah
 | **Önce yerel** | İstekler ve kaynak dosyalar yalnızca sizin belirlediğiniz Ollama'ya gider (varsayılan `localhost`). |
 | **Çalışma maliyeti yok** | Bulut hesabı, API anahtarı, token sayacı yok. Ollama'nın çalıştırabildiği her modeli seçebilirsiniz. |
 | **Java için tasarlandı** | İnceleme hata, güvenlik, performans ve Clean Code başlıklarını kapsar. Üretim, derlenebilir bir Java tipi yazıp diske kaydeder. |
-| **Varsayılanı güvenli** | Var olan dosyanın üzerine asla yazılmaz, büyük dosyalar atlanır, uzun işlemler iptal edilebilir. |
+| **Varsayılanı güvenli** | Var olan dosyanın üzerine asla yazılmaz, 512 KB'tan büyük dosyalar atlanır, uzun işlemler iptal edilebilir. |
 | **Gerçek bir terminal arayüzü** | Geçmiş, çok satırlı prompt, pano desteği ve canlı model paneli olan tam ekran [Lanterna](https://github.com/mabe02/lanterna) arayüzü. |
 
 ## Özellikler
@@ -58,7 +58,8 @@ konuşur; kaynak kodunuz bilgisayarınızdan çıkmaz, yönetilecek bir API anah
 - **Kod analizi modu.** Bir dosyayı ya da bir dizini `.java` dosyaları için tarar; her birini güvenlik açıkları, hatalar,
   performans riskleri ve Clean Code ihlalleri açısından inceler. Derleme ve araç klasörleri (`.git`, `target`,
   `node_modules`, ...) atlanır. Bir inceleme kodun ne yaptığını anlatır, sorunları satır numarası ve önem derecesiyle
-  listeler ve bir hükümle biter. Modelin bağlam penceresine sığmayan dosyalar sessizce kesilmez, bir mesajla atlanır.
+  listeler ve bir hükümle biter. Modelin bağlam penceresine sığmayan bir dosya atlanmaz ve sessizce kesilmez; her parça
+  tüm dosyanın ana hattıyla birlikte, birkaç metot olarak parça parça incelenir.
 - **Kod üretim modu.** Bir sınıfı düz metinle anlatın; model Java kaynağı döndürür, Markdown çitleri temizlenir, tip adı
   bulunur ve dosya `generated/<SınıfAdı>.java` (ya da seçtiğiniz yol) olarak kaydedilir. Kod kaydedilmeden önce uygulamanın
   içinde derlenir; hata varsa model derleyicinin mesajlarını bir kez alır ve dosyayı yeniden yazar. Denetimin sonucu

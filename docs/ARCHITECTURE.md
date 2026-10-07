@@ -90,7 +90,7 @@ The UI picks the handler for the current mode through `ModeDispatcher`; the one-
 | `i18n` | `Language` (the six interface languages) and `Messages` (every text shown to the user, loaded from `i18n/messages_<code>.properties`). |
 | `mode` | One handler per mode, the dispatcher, the `ModeRequest` value object and the `IModeConsole` abstraction. |
 | `model` | Everything about *which* model is used: client registry, installed-model discovery, per-mode settings, suggestions. |
-| `service` | `CodeAssistant` (what is asked of the model), `PromptLibrary` (the prompt files), `ReviewLocalizer`, `ContextBudget`, `CompileCheck` (compiles generated code in process) and `SourceCodeScanner`. See [PROMPTS.md](PROMPTS.md). |
+| `service` | `CodeAssistant` (what is asked of the model), `PromptLibrary` (the prompt files), `ReviewLocalizer`, `ContextBudget`, `CompileCheck` (compiles generated code in process), `CodeSplitter` (cuts a big file into parts) and `SourceCodeScanner`. See [PROMPTS.md](PROMPTS.md). |
 | `tui` | The Lanterna user interface. |
 | `util` | `PathUtils`: quote stripping and relative-path resolution. |
 
@@ -169,17 +169,33 @@ sequenceDiagram
     A->>R: forMode(CODE_ANALYSIS)
     R-->>A: CodeAssistant for the selected model
     loop every file
-        A->>A: cancelled? skip blank files, files over 64 KB or too big for the context window
-        A->>M: analyze(file): English review, translated for other languages
-        M-->>A: review text
+        A->>A: cancelled? skip blank files and files over 512 KB
+        alt the file fits the context window
+            A->>M: analyze(file): English review, translated for other languages
+            M-->>A: review text
+        else too big
+            A->>A: CodeSplitter.split(code, budget): parts with the outline of the file
+            loop every part (cancellation is checked before each)
+                A->>M: analyzePart(file, part): same review prompt, "review only lines a-b"
+                M-->>A: review text of the part
+            end
+        end
         A-->>W: console.println(review) / progress(i, total)
     end
     A-->>W: "Analiz tamamlandı"
 ```
 
-Guards: files over **64 KB** or too big for the model's context window (`octopus.model.num-ctx`) are skipped and
-reported, blank files are ignored, a missing path is reported instead of failing, and the loop checks for cancellation
-before every file.
+Guards: files over **512 KB** are skipped and reported; a file that is too big for the model's context window
+(`octopus.model.num-ctx`) is reviewed in parts (below); blank files are ignored, a missing path is reported instead of
+failing, and the loop checks for cancellation before every file and every part.
+
+`CodeSplitter` cuts a big file by member (method, field, initializer, nested type). A small scanner that skips
+comments, strings, characters and text blocks finds the braces, so it works on a file that does not compile. Every
+part holds the outline of the whole file (imports, the head and closing brace of each type, the signature of each member
+that is not in this part, with `| ...` for what was left out) and the members of the part in full. The outline is
+dropped step by step (imports first, then the other signatures) when it would take more than half of the window. A member
+that does not fit at all is cut into overlapping pieces of lines. Lines keep their numbers from the file. Without any
+braces the whole text is treated as one such member.
 
 ## Flow: code generation
 
@@ -248,7 +264,7 @@ an embedded store such as SQLite and an ADR describing why a file is no longer e
 
 ## Design rules
 
-1. **Local-first.** No telemetry, no hosted service. Limits (64 KB per file, 2000-character prompts) exist to keep
+1. **Local-first.** No telemetry, no hosted service. Limits (512 KB per file, 2000-character prompts) exist to keep
    requests small and fast on a local model.
 2. **Never destroy user data.** Files are created with `CREATE_NEW`; cancellation happens before writes.
 3. **Handlers don't know about the UI.** They talk to `IModeConsole` only.
