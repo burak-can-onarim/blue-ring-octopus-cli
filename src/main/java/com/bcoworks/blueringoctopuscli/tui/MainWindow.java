@@ -840,7 +840,7 @@ final class MainWindow implements MouseSupport.Handler {
      * Katalog + Ollama'da kurulu olup katalogda olmayanlar + (gerekirse) aktif modelin kendisi.
      */
     private List<String> modelNames(String selected) {
-        List<String> names = new ArrayList<>(ModelCatalog.SUGGESTED);
+        List<String> names = new ArrayList<>(ModelCatalog.suggestedFor(appContext.getCurrentMode()));
         for (String installed : installedModels.names()) {
             String display = InstalledModels.display(installed);
             if (names.stream().noneMatch(name -> sameModel(name, display))) {

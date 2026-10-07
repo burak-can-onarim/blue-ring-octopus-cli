@@ -1,0 +1,7 @@
+Write the JUnit 5 test class for this class.
+
+File: {{fileName}}
+
+<code>
+{{code}}
+</code>

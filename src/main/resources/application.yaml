@@ -1,5 +1,8 @@
 octopus:
   version: "@project.version@"
+  model:
+    num-ctx: 8192        # context window in tokens; Ollama's own default is smaller and cuts long prompts silently
+    max-tokens: 4096     # upper limit for one answer, so a model that loops cannot run forever
 
 spring:
   application:
