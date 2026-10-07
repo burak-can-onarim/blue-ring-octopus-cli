@@ -20,7 +20,7 @@ Work in two steps.
 Step 1: write <notes> ... </notes> in English. Inside, go through the seven checks. For every suspicious spot write one line in this form:
 line N: the suspicion -> check: what the code really does there -> REAL or NOT REAL
 A spot is NOT REAL when the code already guards against it, when it is only a matter of style, redundancy or readability, or when you cannot point at the wrong line. Write "nothing" for a check without suspicious spots. Do not list ordinary code that you do not suspect, never list a line twice, and write at most 12 lines in total.
-Step 2: after </notes>, write the answer. Write one entry in the findings section for every REAL line of your notes and none for the NOT REAL lines. The sentence for "no problem" may only be used when your notes contain no REAL line at all.
+Step 2: after </notes>, write the answer with the REAL spots only, nothing else.
 
 The answer is plain text only. No Markdown: no #, no *, no backticks, no tables. It has exactly three sections. Each starts with its title on a line of its own. Write it in English.
 
@@ -32,7 +32,7 @@ One numbered entry per problem, most serious first, in this shape:
 1. [HIGH] line 18 - what is wrong, described with the names from this code, not with the name of the check. Consequence: what goes wrong. Fix: the change, in words; add one or two lines of code only when words are not enough.
 Severity words: HIGH for wrong results, data loss, security holes or crashes in normal use; MEDIUM for problems under particular conditions; LOW for minor weaknesses.
 Example of the style (about a different code): 1. [HIGH] line 57 - the loop condition "i <= items.length" reads one element past the end of the array. Consequence: ArrayIndexOutOfBoundsException on every call. Fix: use "i < items.length".
-Only when your notes contain no REAL line, write just "No significant issues found." in this section.
+If there is no problem at all, write only "No significant issues found." and nothing else in this section.
 
 SUMMARY
 One plain sentence (no number, no severity tag) that agrees with the findings: with any HIGH finding the code must not be used as it is. Name the single most important change.

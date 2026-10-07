@@ -34,12 +34,14 @@ final class ReviewLocalizer {
     }
 
     /**
-     * Did the translation keep the frame? The three titles must be there on lines of their own and the number of
-     * numbered findings must be the same. If not, the localized original is shown instead of a broken translation.
+     * Did the translation keep the frame? Every title the localized review has must still be there on a line of its
+     * own, and the number of numbered findings must be the same. If not, the localized original is shown instead of a
+     * broken translation. (A section the English review lacks does not have to appear.)
      */
     static boolean keepsStructure(String localized, String translated, Messages messages) {
         for (String key : new String[]{"analysis.title.overview", "analysis.title.findings", "analysis.title.summary"}) {
-            if (!hasLine(translated, messages.get(key))) {
+            String title = messages.get(key);
+            if (hasLine(localized, title) && !hasLine(translated, title)) {
                 return false;
             }
         }

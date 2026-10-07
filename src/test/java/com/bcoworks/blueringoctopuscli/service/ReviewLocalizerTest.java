@@ -72,6 +72,16 @@ class ReviewLocalizerTest {
     }
 
     @Test
+    void aSectionTheEnglishReviewLacksDoesNotHaveToAppearInTheTranslation() {
+        Messages messages = new Messages("tr");
+        String localized = ReviewLocalizer.localize(
+                "FINDINGS\n1. [HIGH] line 17 - a. Consequence: b. Fix: c.\n\nSUMMARY\nDo not use it.", messages);
+        String translated = "BULGULAR\n1. [YÜKSEK] satır 17 - a. Sonuç: b. Çözüm: c.\n\nSONUÇ\nKullanmayın.";
+
+        assertTrue(ReviewLocalizer.keepsStructure(localized, translated, messages));
+    }
+
+    @Test
     void aTranslationWithoutTheTitlesOrWithFewerFindingsIsRejected() {
         Messages messages = new Messages("tr");
         String localized = ReviewLocalizer.localize(REVIEW, messages);
