@@ -58,7 +58,7 @@ public class ModelSettings {
         try (Reader reader = Files.newBufferedReader(file, StandardCharsets.UTF_8)) {
             props.load(reader);
         } catch (IOException e) {
-            log.warn("Model ayarları okunamadı: {}", e.getMessage());
+            log.warn("Could not read the model settings: {}", e.getMessage());
             return;
         }
         for (AppMode mode : AppMode.values()) {
@@ -75,10 +75,10 @@ public class ModelSettings {
         try {
             Files.createDirectories(file.getParent());
             try (Writer writer = Files.newBufferedWriter(file, StandardCharsets.UTF_8)) {
-                props.store(writer, "Blue Ring Octopus CLI - mod bazli model secimi");
+                props.store(writer, "Blue Ring Octopus CLI - model selection per mode");
             }
         } catch (IOException e) {
-            log.warn("Model ayarları kaydedilemedi: {}", e.getMessage());
+            log.warn("Could not save the model settings: {}", e.getMessage());
         }
     }
 }

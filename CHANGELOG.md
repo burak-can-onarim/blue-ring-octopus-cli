@@ -8,8 +8,21 @@ contain breaking changes.
 
 ## [Unreleased]
 
+## [0.2.0] - 2026-10-07
+
+### Added
+
+- **Language selection.** The interface and the model's answers are available in English (default), Türkçe,
+  Deutsch, Français, Italiano and Español. Press `Ctrl+G` to choose; the choice applies at once and is saved to
+  `~/.octopus-cli/settings.properties`. The `OCTOPUS_LANG` environment variable overrides it for a run, which also
+  works in Docker and for the one-shot commands. `Ctrl+G` is listed in the shortcut bar.
+
 ### Changed
 
+- **The default language is now English** (it used to be Turkish). Switch back with `Ctrl+G` or `OCTOPUS_LANG=tr`.
+- The mode names, hints, messages and dialogs come from per-language files (`i18n/messages_*.properties`); the model
+  is told to answer in the selected language, and generated code gets its comments in that language.
+- The help texts of the one-shot commands and the log messages are English.
 - The shortcut bar no longer shows the **Giriş** and **Gezinme** group labels. The two rows start with the keys, so
   the whole width is available for shortcuts.
 
@@ -142,7 +155,8 @@ contain breaking changes.
 - `start-agent.bat` launcher for Windows with a model picker.
 - Windows archive with a bundled JRE.
 
-[Unreleased]: https://github.com/burak-can-onarim/blue-ring-octopus-cli/compare/v0.1.8...HEAD
+[Unreleased]: https://github.com/burak-can-onarim/blue-ring-octopus-cli/compare/v0.2.0...HEAD
+[0.2.0]: https://github.com/burak-can-onarim/blue-ring-octopus-cli/compare/v0.1.8...v0.2.0
 [0.1.8]: https://github.com/burak-can-onarim/blue-ring-octopus-cli/compare/v0.1.7...v0.1.8
 [0.1.7]: https://github.com/burak-can-onarim/blue-ring-octopus-cli/compare/v0.1.6...v0.1.7
 [0.1.6]: https://github.com/burak-can-onarim/blue-ring-octopus-cli/compare/v0.1.5...v0.1.6

@@ -1,6 +1,7 @@
 package com.bcoworks.blueringoctopuscli.mode;
 
 import com.bcoworks.blueringoctopuscli.context.AppMode;
+import com.bcoworks.blueringoctopuscli.i18n.Messages;
 import com.bcoworks.blueringoctopuscli.model.AiServiceRegistry;
 import com.bcoworks.blueringoctopuscli.service.ICodeAnalyzerService;
 import com.bcoworks.blueringoctopuscli.service.SourceCodeScanner;
@@ -24,6 +25,7 @@ public class AnalysisModeHandler implements IModeHandler {
 
     private final AiServiceRegistry ai;
     private final SourceCodeScanner scanner;
+    private final Messages messages;
 
     @Override
     public AppMode mode() {
@@ -33,23 +35,23 @@ public class AnalysisModeHandler implements IModeHandler {
     @Override
     public void handle(ModeRequest request, IModeConsole console) throws IOException {
         if (!request.prompt().isEmpty()) {
-            console.println("Not: Analiz modunda prompt kullanılmaz, yolu Path alanına yazın.");
+            console.println(messages.get("analysis.noPromptNote"));
         }
 
         Path target = PathUtils.resolve(request.hasPath() ? request.path() : ".");
         if (!Files.exists(target)) {
-            console.println("Hata: Belirtilen yol bulunamadı -> " + target);
+            console.println(messages.get("error.pathNotFound", target));
             return;
         }
 
-        console.step("Java dosyaları taranıyor...");
+        console.step(messages.get("analysis.scanning"));
         List<Path> files = scanner.scanJavaFiles(target.toString());
         if (files.isEmpty()) {
-            console.println("Analiz edilecek Java dosyası bulunamadı: " + target);
+            console.println(messages.get("analysis.noFiles", target));
             return;
         }
         int total = files.size();
-        console.println("%d dosya bulundu: %s".formatted(total, target));
+        console.println(messages.get("analysis.found", total, target));
 
         ICodeAnalyzerService service = ai.forMode(AppMode.KOD_ANALIZI);
 
@@ -62,22 +64,22 @@ public class AnalysisModeHandler implements IModeHandler {
             try {
                 long size = Files.size(file);
                 if (size > MAX_FILE_BYTES) {
-                    console.println("\n--- %s atlandı (%d KB, limit %d KB) ---"
-                            .formatted(file.getFileName(), size / 1024, MAX_FILE_BYTES / 1024));
+                    console.println(messages.get("analysis.skipped",
+                            file.getFileName(), size / 1024, MAX_FILE_BYTES / 1024));
                     continue;
                 }
                 String code = Files.readString(file);
                 if (code.isBlank()) {
                     continue;
                 }
-                console.step("Analiz ediliyor [%d/%d] %s".formatted(i + 1, total, file.getFileName()));
-                String result = service.analyze(code);
+                console.step(messages.get("analysis.analyzing", i + 1, total, file.getFileName()));
+                String result = service.analyze(messages.language().englishName(), code);
                 console.println("\n--- " + file.getFileName() + " ---\n" + result);
             } catch (IOException e) {
-                console.println("\n--- " + file.getFileName() + " okunamadı: " + e.getMessage());
+                console.println(messages.get("analysis.unreadable", file.getFileName(), e.getMessage()));
             }
         }
         console.progress(total, total);
-        console.step("Analiz tamamlandı");
+        console.step(messages.get("analysis.done"));
     }
 }

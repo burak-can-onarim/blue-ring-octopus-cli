@@ -50,7 +50,9 @@ changing the mode layer or the UI.
 - Handlers must talk to the user only through `IModeConsole`; do not import UI classes into the `mode` package.
 - Never overwrite or delete user files. Generated files are created with `CREATE_NEW`.
 - Prefer small, pure, testable methods. Keep comments for the *why*, not the *what*.
-- User-facing text in the application is currently Turkish; keep new messages consistent with the existing ones.
+- User-facing text is localized: add every new message to **all six** `src/main/resources/i18n/messages_*.properties`
+  files (English is the source and the fallback) and read it through `Messages`; never hard-code a string in the UI
+  or in a handler. `MessagesTest` checks that the files have the same keys, placeholders and line breaks.
   Code, identifiers, commit messages and documentation are in English (Turkish is also fine for issues and discussion).
 
 ### Commit messages

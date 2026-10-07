@@ -3,7 +3,7 @@ package com.bcoworks.blueringoctopuscli.context;
 import org.junit.jupiter.api.Test;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
+
 
 class AppModeTest {
 
@@ -27,14 +27,6 @@ class AppModeTest {
         }
     }
 
-    @Test
-    void everyModeHasDisplayNameAndHints() {
-        for (AppMode mode : AppMode.values()) {
-            assertFalse(mode.getDisplayName().isBlank(), mode.name());
-            assertFalse(mode.getPromptHint().isBlank(), mode.name());
-            assertFalse(mode.getPathHint().isBlank(), mode.name());
-        }
-    }
 
     @Test
     void contextStartsInCodeAnalysisMode() {

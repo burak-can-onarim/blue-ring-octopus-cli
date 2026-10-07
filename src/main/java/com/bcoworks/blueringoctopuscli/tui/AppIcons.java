@@ -29,7 +29,7 @@ final class AppIcons {
             String resource = "/icons/octopus-" + size + ".png";
             try (InputStream in = AppIcons.class.getResourceAsStream(resource)) {
                 if (in == null) {
-                    log.warn("Uygulama ikonu bulunamadı: {}", resource);
+                    log.warn("Application icon not found: {}", resource);
                     continue;
                 }
                 Image image = ImageIO.read(in);
@@ -37,7 +37,7 @@ final class AppIcons {
                     icons.add(image);
                 }
             } catch (IOException e) {
-                log.warn("Uygulama ikonu okunamadı: {} ({})", resource, e.getMessage());
+                log.warn("Could not read application icon: {} ({})", resource, e.getMessage());
             }
         }
         return icons;

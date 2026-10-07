@@ -2,6 +2,8 @@ package com.bcoworks.blueringoctopuscli.tui;
 
 import com.bcoworks.blueringoctopuscli.context.AppContext;
 import com.bcoworks.blueringoctopuscli.context.AppMode;
+import com.bcoworks.blueringoctopuscli.i18n.Language;
+import com.bcoworks.blueringoctopuscli.i18n.Messages;
 import com.bcoworks.blueringoctopuscli.mode.IModeConsole;
 import com.bcoworks.blueringoctopuscli.mode.ModeDispatcher;
 import com.bcoworks.blueringoctopuscli.mode.ModeRequest;
@@ -29,6 +31,7 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * ┌ uygulama çerçevesi ───────────────────────┬ model paneli ┐
@@ -47,10 +50,7 @@ final class MainWindow implements MouseSupport.Handler {
     private static final String[] SPINNER = {"|", "/", "-", "\\"};
     private static final int PROGRESS_CELLS = 12;
     private static final String BLANK_PROGRESS = " ".repeat(PROGRESS_CELLS + 6);
-    private static final int MODE_TEXT_WIDTH = Arrays.stream(AppMode.values())
-            .mapToInt(mode -> mode.getDisplayName().length())
-            .max()
-            .orElse(12) + 4;
+
     private static final long NOTICE_MILLIS = 3_000;
 
     private final MultiWindowTextGUI gui;
@@ -60,6 +60,7 @@ final class MainWindow implements MouseSupport.Handler {
     private final BannerArt banner;
     private final ModelSettings modelSettings;
     private final InstalledModels installedModels;
+    private final Messages messages;
 
     private final BasicWindow window = new BasicWindow("Blue Ring Octopus CLI");
     private final Panel bannerPanel = new Panel(linear(Direction.VERTICAL, 0));
@@ -67,6 +68,12 @@ final class MainWindow implements MouseSupport.Handler {
     private Border dialogBox;
     private Border promptBox;
     private Border pathBox;
+    private Border modeBox;
+    private Border stepBox;
+    private Border activeModelBox;
+    private Border modelBox;
+    private KeyHintBar keyHints;
+    private KeyHintBar legend;
     private final PromptArea promptInput = new PromptArea();
     private final TextBox pathInput = new TextBox(new TerminalSize(40, 1));
     private final Label hintLabel = new Label("");
@@ -150,7 +157,7 @@ final class MainWindow implements MouseSupport.Handler {
 
     MainWindow(MultiWindowTextGUI gui, AppContext appContext, ModeDispatcher dispatcher,
                ExecutorService aiExecutor, BannerArt banner,
-               ModelSettings modelSettings, InstalledModels installedModels) {
+               ModelSettings modelSettings, InstalledModels installedModels, Messages messages) {
         this.gui = gui;
         this.appContext = appContext;
         this.dispatcher = dispatcher;
@@ -158,6 +165,7 @@ final class MainWindow implements MouseSupport.Handler {
         this.banner = banner;
         this.modelSettings = modelSettings;
         this.installedModels = installedModels;
+        this.messages = messages;
     }
 
     void show() {
@@ -275,7 +283,7 @@ final class MainWindow implements MouseSupport.Handler {
         bannerBox.setLayoutData(fill());
 
         // Diyalog: istekler ve yanıtlar. Prompt girişinden ayrı bir kutudur.
-        dialogBox = dialog.withBorder(Borders.singleLine(" Diyalog "));
+        dialogBox = titled(dialog, messages.get("box.dialog"));
         dialogBox.setLayoutData(grow());
 
         // Prompt: ipucu satırı + çok satırlı giriş
@@ -283,11 +291,10 @@ final class MainWindow implements MouseSupport.Handler {
         hintLabel.setForegroundColor(OctopusTheme.YELLOW);
         promptContent.addComponent(hintLabel);
         promptContent.addComponent(inputRow(OctopusTheme.MAUVE, promptInput));
-        promptBox = promptContent.withBorder(Borders.singleLine(" Prompt "));
+        promptBox = titled(promptContent, messages.get("box.prompt"));
         promptBox.setLayoutData(fill());
 
-        pathBox = inputRow(OctopusTheme.TEAL, pathInput)
-                .withBorder(Borders.singleLine(" Path · çalışma dizini: " + shorten(System.getProperty("user.dir")) + " "));
+        pathBox = titled(inputRow(OctopusTheme.TEAL, pathInput), pathTitle());
         pathBox.setLayoutData(fill());
 
         // --- orta: solda diyalog / prompt / path kutuları, sağda model paneli (bu satırın yüksekliği kadar)
@@ -304,19 +311,19 @@ final class MainWindow implements MouseSupport.Handler {
 
         // --- alt satır: mod bilgisi / loading ve step / aktif model
         modeLabel.setForegroundColor(OctopusTheme.MAUVE);
-        Border modeBox = modeLabel.withBorder(Borders.singleLine(" Mod "));
+        modeBox = titled(modeLabel, messages.get("box.mode"));
 
         stepLabel.setLayoutData(grow());
         progressLabel.setForegroundColor(OctopusTheme.BLUE);
         Panel stepRow = new Panel(linear(Direction.HORIZONTAL, 1));
         stepRow.addComponent(stepLabel);
         stepRow.addComponent(progressLabel);
-        Border stepBox = stepRow.withBorder(Borders.singleLine(" Durum "));
+        stepBox = titled(stepRow, messages.get("box.status"));
         stepBox.setLayoutData(grow());
 
         activeModelLabel.setForegroundColor(OctopusTheme.TEAL);
         activeModelLabel.setPreferredSize(new TerminalSize(SIDE_INNER, 1)); // model paneliyle aynı genişlik
-        Border activeModelBox = activeModelLabel.withBorder(Borders.singleLine(" Aktif Model "));
+        activeModelBox = titled(activeModelLabel, messages.get("box.activeModel"));
 
         Panel statusRow = new Panel(linear(Direction.HORIZONTAL, 1));
         statusRow.setLayoutData(fill());
@@ -324,20 +331,7 @@ final class MainWindow implements MouseSupport.Handler {
         statusRow.addComponent(stepBox);
         statusRow.addComponent(activeModelBox);
 
-        KeyHintBar keyHints = new KeyHintBar(List.of(
-                // Sütunlar satırlar arasında hizalanır; benzer genişlikteki maddeler aynı sütuna konur ki boşluklar dengeli kalsın.
-                new KeyHintBar.Row(List.of(
-                        new KeyHintBar.Hint("Enter", "Gönder"),
-                        new KeyHintBar.Hint("Shift+Enter", "Yeni satır"),
-                        new KeyHintBar.Hint("Ctrl+C", "Kopyala"),
-                        new KeyHintBar.Hint("Ctrl+V", "Yapıştır"),
-                        new KeyHintBar.Hint("↑↓", "Geçmiş"))),
-                new KeyHintBar.Row(List.of(
-                        new KeyHintBar.Hint("Tab", "Mod"),
-                        new KeyHintBar.Hint("PgUp/PgDn", "Kaydır"),
-                        new KeyHintBar.Hint("Ctrl+P", "Prompt/Path"),
-                        new KeyHintBar.Hint("Ctrl+L", "Model"),
-                        new KeyHintBar.Hint("Esc", "İptal / Çıkış")))));
+        keyHints = new KeyHintBar(keyHintRows());
         keyHints.setLayoutData(fill());
 
         // --- uygulama çerçevesi
@@ -361,7 +355,7 @@ final class MainWindow implements MouseSupport.Handler {
         applyBanner(gui.getScreen().getTerminalSize());
         refreshMode();
         refreshInstalledAsync();
-        setStatus(" Hazır", OctopusTheme.GREEN);
+        setStatus(" " + messages.get("status.ready"), OctopusTheme.GREEN);
     }
 
     private Border buildModelPanel() {
@@ -372,10 +366,7 @@ final class MainWindow implements MouseSupport.Handler {
         separator.setLayoutData(fill());
 
         // Gösterge: renkler listedekiyle aynı (seçili yeşil, kurulu mavi, yok soluk)
-        KeyHintBar legend = new KeyHintBar(List.of(
-                new KeyHintBar.Row(List.of(new KeyHintBar.Hint("●", "seçili", OctopusTheme.GREEN, OctopusTheme.MUTED))),
-                new KeyHintBar.Row(List.of(new KeyHintBar.Hint("+", "kurulu", OctopusTheme.BLUE, OctopusTheme.MUTED))),
-                new KeyHintBar.Row(List.of(new KeyHintBar.Hint("-", "yok", OctopusTheme.MUTED, OctopusTheme.MUTED)))));
+        legend = new KeyHintBar(legendRows());
         // Panel genişliğini bu çubuklar belirlemesin: model listesiyle aynı iç genişlik
         legend.setPreferredSize(new TerminalSize(SIDE_INNER, 3));
         modelStatusBar.setPreferredSize(new TerminalSize(SIDE_INNER, 1));
@@ -389,9 +380,9 @@ final class MainWindow implements MouseSupport.Handler {
         content.addComponent(legend);
         content.addComponent(modelStatusBar);
 
-        Border box = content.withBorder(Borders.singleLine(" Model "));
-        box.setLayoutData(fill());
-        return box;
+        modelBox = titled(content, messages.get("box.models"));
+        modelBox.setLayoutData(fill());
+        return modelBox;
     }
 
     private Panel inputRow(TextColor signColor, Component box) {
@@ -459,6 +450,9 @@ final class MainWindow implements MouseSupport.Handler {
             } else if (ctrl(key, 'l')) {
                 deliverEvent.set(false);
                 openModelPanel();
+            } else if (ctrl(key, 'g')) {
+                deliverEvent.set(false);
+                chooseLanguage();
             } else if (ctrl(key, 'v')) {
                 deliverEvent.set(false);
                 paste();
@@ -536,7 +530,7 @@ final class MainWindow implements MouseSupport.Handler {
             case Character -> {
                 if (ctrl(key, 'l')) {
                     closeModelPanel();
-                } else if (ctrl(key, 'c') || ctrl(key, 'p')) {
+                } else if (ctrl(key, 'c') || ctrl(key, 'p') || ctrl(key, 'g')) {
                     return false;
                 }
             }
@@ -598,7 +592,7 @@ final class MainWindow implements MouseSupport.Handler {
 
     private void refreshMode() {
         AppMode mode = appContext.getCurrentMode();
-        modeLabel.setText(String.format("%-" + MODE_TEXT_WIDTH + "s", "‹ " + mode.getDisplayName() + " ›"));
+        modeLabel.setText(String.format("%-" + modeTextWidth() + "s", "‹ " + messages.modeName(mode) + " ›"));
         refreshModelPanel(true);
         refreshHint();
     }
@@ -606,11 +600,11 @@ final class MainWindow implements MouseSupport.Handler {
     private void refreshHint() {
         AppMode mode = appContext.getCurrentMode();
         if (focusedOnModels()) {
-            hintLabel.setText(" Model seçimi (" + mode.getDisplayName() + "): ↑↓ gez · Enter seç · Esc geri");
+            hintLabel.setText(" " + messages.get("hint.models", messages.modeName(mode)));
         } else {
             hintLabel.setText(focusedOnPath()
-                    ? " Path: " + mode.getPathHint()
-                    : " Prompt: " + mode.getPromptHint());
+                    ? " Path: " + messages.pathHint(mode)
+                    : " Prompt: " + messages.promptHint(mode));
         }
         refreshModelHint();
     }
@@ -623,7 +617,7 @@ final class MainWindow implements MouseSupport.Handler {
         }
         Optional<String> clip = ClipboardSupport.read();
         if (clip.isEmpty() || clip.get().isBlank()) {
-            notice(" Panoda yapıştırılacak metin yok.", OctopusTheme.YELLOW);
+            notice(" " + messages.get("notice.clipboardEmpty"), OctopusTheme.YELLOW);
             return;
         }
         if (focusedOnPrompt()) {
@@ -647,20 +641,20 @@ final class MainWindow implements MouseSupport.Handler {
         pathInput.setText(current.substring(0, column) + value + current.substring(column));
         pathInput.setCaretPosition(0, column + value.length());
         if (lines.size() > 1) {
-            notice(" Path tek satırdır, panodaki ilk satır alındı.", OctopusTheme.YELLOW);
+            notice(" " + messages.get("notice.pathSingleLine"), OctopusTheme.YELLOW);
         }
     }
 
     private void copyLastOutput() {
         String text = lastOutput.toString().strip();
         if (text.isEmpty()) {
-            notice(" Kopyalanacak çıktı yok.", OctopusTheme.YELLOW);
+            notice(" " + messages.get("notice.nothingToCopy"), OctopusTheme.YELLOW);
             return;
         }
         if (ClipboardSupport.write(text)) {
-            notice(" Son çıktı panoya kopyalandı (" + text.length() + " karakter).", OctopusTheme.GREEN);
+            notice(" " + messages.get("notice.copied", text.length()), OctopusTheme.GREEN);
         } else {
-            notice(" Panoya erişilemedi.", OctopusTheme.YELLOW);
+            notice(" " + messages.get("notice.clipboardFailed"), OctopusTheme.YELLOW);
         }
     }
 
@@ -691,14 +685,14 @@ final class MainWindow implements MouseSupport.Handler {
         AppMode mode = appContext.getCurrentMode();
         if (installedModels.isKnown() && !installedModels.isInstalled(name)) {
             // Durum kutusu dar; uzun model adlarında komut kesilir, bu yüzden tam komut çıktıya da yazılır.
-            notice(" Kurulu değil, komut çıktıda", OctopusTheme.YELLOW);
-            dialog.addNote("Model kurulu değil. Terminalde çalıştır: ollama pull " + name);
+            notice(" " + messages.get("notice.notInstalled"), OctopusTheme.YELLOW);
+            dialog.addNote(messages.get("note.notInstalled", name));
             return;
         }
         modelSettings.select(mode, name);
         refreshModelPanel(false);
         closeModelPanel();
-        notice(" " + mode.getDisplayName() + " için model: " + name, OctopusTheme.GREEN);
+        notice(" " + messages.get("notice.modelSelected", messages.modeName(mode), name), OctopusTheme.GREEN);
     }
 
     /**
@@ -733,7 +727,7 @@ final class MainWindow implements MouseSupport.Handler {
         }
         modelList.setCursor(cursor);
 
-        modelModeLabel.setText(fit(" Mod: " + mode.getDisplayName(), SIDE_INNER));
+        modelModeLabel.setText(fit(" " + messages.get("model.mode", messages.modeName(mode)), SIDE_INNER));
         refreshModelHint();
         refreshActiveModel();
     }
@@ -765,11 +759,12 @@ final class MainWindow implements MouseSupport.Handler {
     private void refreshModelHint() {
         List<KeyHintBar.Hint> hints;
         if (!installedModels.isChecked()) {
-            hints = List.of(new KeyHintBar.Hint("", "Ollama kontrol ediliyor...", OctopusTheme.MUTED, OctopusTheme.MUTED));
+            hints = List.of(new KeyHintBar.Hint("", messages.get("model.checking"), OctopusTheme.MUTED, OctopusTheme.MUTED));
         } else if (!installedModels.isKnown()) {
-            hints = List.of(new KeyHintBar.Hint("", "Ollama'ya ulaşılamadı", OctopusTheme.YELLOW, OctopusTheme.YELLOW));
+            hints = List.of(new KeyHintBar.Hint("", messages.get("model.unreachable"), OctopusTheme.YELLOW, OctopusTheme.YELLOW));
         } else if (focusedOnModels()) {
-            hints = List.of(new KeyHintBar.Hint("Enter", "Seç"), new KeyHintBar.Hint("Esc", "Geri"));
+            hints = List.of(new KeyHintBar.Hint("Enter", messages.get("model.select")),
+                    new KeyHintBar.Hint("Esc", messages.get("model.back")));
         } else {
             hints = List.of(); // paneli açan kısayol alttaki genel kısayol çubuğunda yazıyor
         }
@@ -779,7 +774,7 @@ final class MainWindow implements MouseSupport.Handler {
     private void refreshActiveModel() {
         String model = modelSettings.modelFor(appContext.getCurrentMode());
         boolean missing = installedModels.isKnown() && !installedModels.isInstalled(model);
-        activeModelLabel.setText(fit(missing ? model + " (yok)" : model, SIDE_INNER));
+        activeModelLabel.setText(fit(missing ? model + " " + messages.get("model.missing") : model, SIDE_INNER));
         activeModelLabel.setForegroundColor(missing ? OctopusTheme.YELLOW : OctopusTheme.TEAL);
     }
 
@@ -806,8 +801,8 @@ final class MainWindow implements MouseSupport.Handler {
             return;
         }
         try {
-            boolean yes = askYesNo("İşlemi iptal et",
-                    "Çalışan işlem iptal edilsin mi?\nSadece bu işlem durur, uygulama açık kalır.");
+            boolean yes = askYesNo(messages.get("dialog.cancelTask.title"),
+                    messages.get("dialog.cancelTask.message"));
             if (yes) {
                 interruptJob(job);
             }
@@ -824,7 +819,7 @@ final class MainWindow implements MouseSupport.Handler {
             return;
         }
         job.cancel();
-        dialog.addAnswer("■ İşlem iptal edildi.");
+        dialog.addAnswer(messages.get("task.cancelled"));
         finishTask(job);
     }
 
@@ -833,10 +828,8 @@ final class MainWindow implements MouseSupport.Handler {
             return; // başka bir onay kutusu zaten açık
         }
         try {
-            String message = busy.get()
-                    ? "Devam eden bir işlem var, çıkarsanız iptal edilir.\nUygulamadan çıkmak istiyor musunuz?"
-                    : "Uygulamadan çıkmak istiyor musunuz?";
-            if (askYesNo("Çıkış", message)) {
+            String message = messages.get(busy.get() ? "dialog.exit.messageBusy" : "dialog.exit.message");
+            if (askYesNo(messages.get("dialog.exit.title"), message)) {
                 closeApplication();
             }
         } finally {
@@ -863,8 +856,8 @@ final class MainWindow implements MouseSupport.Handler {
         Label label = new Label(message);
         label.setForegroundColor(OctopusTheme.TEXT);
 
-        Button no = new Button("Hayır", dialog::close);
-        Button yesButton = new Button("Evet", () -> {
+        Button no = new Button(messages.get("dialog.no"), dialog::close);
+        Button yesButton = new Button(messages.get("dialog.yes"), () -> {
             yes.set(true);
             dialog.close();
         });
@@ -892,11 +885,11 @@ final class MainWindow implements MouseSupport.Handler {
                     return;
                 }
                 char lower = Character.toLowerCase(c);
-                if (lower == 'e' || lower == 'y') {
+                if (messages.get("dialog.keys.yes").indexOf(lower) >= 0) {
                     deliverEvent.set(false);
                     yes.set(true);
                     dialog.close();
-                } else if (lower == 'h' || lower == 'n') {
+                } else if (messages.get("dialog.keys.no").indexOf(lower) >= 0) {
                     deliverEvent.set(false);
                     dialog.close();
                 }
@@ -919,11 +912,11 @@ final class MainWindow implements MouseSupport.Handler {
             return;
         }
         if (prompt.isEmpty() && mode != AppMode.KOD_ANALIZI) {
-            notice(" Önce prompt alanına bir istek yazın.", OctopusTheme.YELLOW);
+            notice(" " + messages.get("notice.emptyPrompt"), OctopusTheme.YELLOW);
             return;
         }
         if (!busy.compareAndSet(false, true)) {
-            notice(" Önceki işlem sürüyor. İptal etmek için Esc.", OctopusTheme.YELLOW);
+            notice(" " + messages.get("notice.busy"), OctopusTheme.YELLOW);
             return;
         }
 
@@ -934,10 +927,10 @@ final class MainWindow implements MouseSupport.Handler {
             pathInput.setText(""); // aynı dosyaya ikinci kez yazma hatasını önler
         }
         lastOutput.setLength(0);
-        dialog.startTurn("Sen · " + mode.getDisplayName() + " · " + modelSettings.modelFor(mode),
+        dialog.startTurn(messages.get("dialog.you") + " · " + messages.modeName(mode) + " · " + modelSettings.modelFor(mode),
                 describe(mode, prompt, path));
 
-        currentStep = "Başlatılıyor...";
+        currentStep = messages.get("status.starting");
         progressDone = 0;
         progressTotal = 0;
         Job job = new Job();
@@ -948,9 +941,9 @@ final class MainWindow implements MouseSupport.Handler {
         job.future = aiExecutor.submit(() -> run(job, mode, request));
     }
 
-    private static String describe(AppMode mode, String prompt, String path) {
+    private String describe(AppMode mode, String prompt, String path) {
         return switch (mode) {
-            case KOD_ANALIZI -> path.isEmpty() ? "(çalışma dizini)" : path;
+            case KOD_ANALIZI -> path.isEmpty() ? messages.get("describe.workingDir") : path;
             case KOD_GENERATE -> path.isEmpty() ? prompt : prompt + "  →  " + path;
             default -> prompt;
         };
@@ -961,9 +954,9 @@ final class MainWindow implements MouseSupport.Handler {
             dispatcher.dispatch(mode, request, job);
         } catch (Exception e) {
             if (!job.isCancelled()) { // iptalin yol açtığı istisnalar kullanıcıya hata olarak gösterilmez
-                log.error("Mod çalıştırılırken hata: {}", mode, e);
+                log.error("Error while running mode: {}", mode, e);
                 String message = e.getMessage() != null ? e.getMessage() : e.getClass().getSimpleName();
-                ui(() -> dialog.addAnswer("Hata: " + message));
+                ui(() -> dialog.addAnswer(messages.get("error.generic", message)));
             }
         } finally {
             ui(() -> finishTask(job));
@@ -999,9 +992,147 @@ final class MainWindow implements MouseSupport.Handler {
             spinnerTask.cancel(false);
         }
         noticeUntil = 0;
-        setStatus(" Hazır", OctopusTheme.GREEN);
+        setStatus(" " + messages.get("status.ready"), OctopusTheme.GREEN);
         progressLabel.setText(BLANK_PROGRESS);
         busy.set(false);
+    }
+
+    // ---------------------------------------------------------------- language
+
+    private static Border titled(Component inner, String title) {
+        return inner.withBorder(Borders.singleLine(" " + title + " "));
+    }
+
+    private String pathTitle() {
+        return messages.get("box.path", shorten(System.getProperty("user.dir")));
+    }
+
+    /**
+     * Border titles cannot be changed afterwards, so the border is replaced by a new one at the same place.
+     */
+    private static Border retitle(Border old, String title) {
+        Container parent = old.getParent();
+        Component inner = old.getComponent();
+        LayoutData layout = old.getLayoutData();
+        old.removeComponent(inner);
+        Border fresh = titled(inner, title);
+        fresh.setLayoutData(layout);
+        if (parent instanceof Panel panel) {
+            int index = panel.getChildrenList().indexOf(old);
+            panel.removeComponent(old);
+            panel.addComponent(index, fresh);
+        }
+        return fresh;
+    }
+
+    private List<KeyHintBar.Row> keyHintRows() {
+        // Columns line up across the rows; items of similar width share a column so the gaps stay even.
+        return List.of(
+                new KeyHintBar.Row(List.of(
+                        new KeyHintBar.Hint("Enter", messages.get("key.send")),
+                        new KeyHintBar.Hint("Shift+Enter", messages.get("key.newLine")),
+                        new KeyHintBar.Hint("Ctrl+C", messages.get("key.copy")),
+                        new KeyHintBar.Hint("Ctrl+V", messages.get("key.paste")),
+                        new KeyHintBar.Hint("↑↓", messages.get("key.history")),
+                        new KeyHintBar.Hint("Ctrl+G", messages.get("key.language")))),
+                new KeyHintBar.Row(List.of(
+                        new KeyHintBar.Hint("Tab", messages.get("key.mode")),
+                        new KeyHintBar.Hint("PgUp/PgDn", messages.get("key.scroll")),
+                        new KeyHintBar.Hint("Ctrl+P", "Prompt/Path"),
+                        new KeyHintBar.Hint("Ctrl+L", messages.get("key.model")),
+                        new KeyHintBar.Hint("Esc", messages.get("key.cancelExit")))));
+    }
+
+    private List<KeyHintBar.Row> legendRows() {
+        return List.of(
+                new KeyHintBar.Row(List.of(new KeyHintBar.Hint("●", messages.get("legend.selected"), OctopusTheme.GREEN, OctopusTheme.MUTED))),
+                new KeyHintBar.Row(List.of(new KeyHintBar.Hint("+", messages.get("legend.installed"), OctopusTheme.BLUE, OctopusTheme.MUTED))),
+                new KeyHintBar.Row(List.of(new KeyHintBar.Hint("-", messages.get("legend.missing"), OctopusTheme.MUTED, OctopusTheme.MUTED))));
+    }
+
+    private int modeTextWidth() {
+        return Arrays.stream(AppMode.values())
+                .mapToInt(mode -> messages.modeName(mode).length())
+                .max()
+                .orElse(12) + 4;
+    }
+
+    /**
+     * Ctrl+G: pick the interface language. The choice is applied at once and remembered.
+     */
+    private void chooseLanguage() {
+        if (!dialogOpen.compareAndSet(false, true)) {
+            return;
+        }
+        try {
+            Language picked = askLanguage();
+            if (picked != null && picked != messages.language()) {
+                messages.setLanguage(picked);
+                applyLanguage();
+            }
+        } finally {
+            dialogOpen.set(false);
+        }
+    }
+
+    private Language askLanguage() {
+        AtomicReference<Language> result = new AtomicReference<>();
+        BasicWindow picker = new BasicWindow(messages.get("dialog.language.title"));
+        picker.setHints(List.of(Window.Hint.CENTERED, Window.Hint.MODAL));
+
+        ActionListBox list = new ActionListBox(new TerminalSize(26, Language.values().length));
+        for (Language language : Language.values()) {
+            String mark = language == messages.language() ? "● " : "  ";
+            list.addItem(mark + language.nativeName(), () -> {
+                result.set(language);
+                picker.close();
+            });
+        }
+        list.setSelectedIndex(messages.language().ordinal());
+
+        Label hint = new Label(messages.get("dialog.language.hint"));
+        hint.setForegroundColor(OctopusTheme.MUTED);
+
+        Panel content = new Panel(linear(Direction.VERTICAL, 1));
+        content.addComponent(list);
+        content.addComponent(hint);
+        picker.setComponent(content);
+        picker.setFocusedInteractable(list);
+        picker.addWindowListener(new WindowListenerAdapter() {
+            @Override
+            public void onInput(Window basePane, KeyStroke key, AtomicBoolean deliverEvent) {
+                if (key.getKeyType() == KeyType.Escape) {
+                    deliverEvent.set(false);
+                    picker.close();
+                }
+            }
+        });
+
+        gui.addWindowAndWait(picker);
+        return result.get();
+    }
+
+    /**
+     * Redraws everything that carries text after the language changed. Text already in the dialog stays as it was.
+     */
+    private void applyLanguage() {
+        Interactable focused = window.getFocusedInteractable();
+        dialogBox = retitle(dialogBox, messages.get("box.dialog"));
+        promptBox = retitle(promptBox, messages.get("box.prompt"));
+        pathBox = retitle(pathBox, pathTitle());
+        modeBox = retitle(modeBox, messages.get("box.mode"));
+        stepBox = retitle(stepBox, messages.get("box.status"));
+        activeModelBox = retitle(activeModelBox, messages.get("box.activeModel"));
+        modelBox = retitle(modelBox, messages.get("box.models"));
+        window.setFocusedInteractable(focused);
+
+        keyHints.setRows(keyHintRows());
+        legend.setRows(legendRows());
+        refreshMode();
+        if (!busy.get()) {
+            setStatus(" " + messages.get("status.ready"), OctopusTheme.GREEN);
+        }
+        notice(" " + messages.get("notice.languageChanged", messages.language().nativeName()), OctopusTheme.GREEN);
     }
 
     // ---------------------------------------------------------------- helpers

@@ -2,6 +2,7 @@ package com.bcoworks.blueringoctopuscli.command;
 
 import com.bcoworks.blueringoctopuscli.context.AppContext;
 import com.bcoworks.blueringoctopuscli.context.AppMode;
+import com.bcoworks.blueringoctopuscli.i18n.Messages;
 import org.springframework.shell.component.SingleItemSelector;
 import org.springframework.shell.component.support.SelectorItem;
 import org.springframework.shell.standard.AbstractShellComponent;
@@ -16,22 +17,24 @@ import java.util.Optional;
 public class ModeCommands extends AbstractShellComponent {
 
     private final AppContext appContext;
+    private final Messages messages;
 
-    public ModeCommands(AppContext appContext) {
+    public ModeCommands(AppContext appContext, Messages messages) {
         this.appContext = appContext;
+        this.messages = messages;
     }
 
-    @ShellMethod(value = "Çalışma modunu değiştirir (Kod Analizi, Generate, Test vb.)", key = {"mode", "mod"})
+    @ShellMethod(value = "Changes the working mode (code analysis, generation, ...)", key = {"mode", "mod"})
     public void selectMode() {
         List<SelectorItem<AppMode>> items = new ArrayList<>();
         for (AppMode mode : AppMode.values()) {
-            items.add(SelectorItem.of(mode.getDisplayName(), mode));
+            items.add(SelectorItem.of(messages.modeName(mode), mode));
         }
 
         SingleItemSelector<AppMode, SelectorItem<AppMode>> selector = new SingleItemSelector<>(
                 getTerminal(),
                 items,
-                "Lütfen çalıştırmak istediğiniz modu seçin:",
+                messages.get("mode.select.prompt"),
                 null
         );
 
@@ -46,7 +49,7 @@ public class ModeCommands extends AbstractShellComponent {
                 .flatMap(selectedItem -> Optional.ofNullable(selectedItem.getItem()))
                 .ifPresent(selectedMode -> {
                     appContext.setCurrentMode(selectedMode);
-                    System.out.println("\nAktif mod değiştirildi: " + selectedMode.getDisplayName());
+                    System.out.println("\n" + messages.get("mode.changed", messages.modeName(selectedMode)));
                 });
     }
 }

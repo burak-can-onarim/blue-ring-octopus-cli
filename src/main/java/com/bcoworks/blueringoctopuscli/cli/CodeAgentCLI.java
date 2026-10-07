@@ -16,18 +16,18 @@ public class CodeAgentCLI {
     private final AnalysisModeHandler analysisHandler;
     private final GenerateModeHandler generateHandler;
 
-    @ShellMethod(key = "analyze", value = "Verilen dizindeki Java dosyalarını analiz eder.")
+    @ShellMethod(key = "analyze", value = "Analyzes the Java files in the given directory.")
     public void analyzeProject(
-            @ShellOption(defaultValue = ".", help = "Analiz edilecek dizin veya dosya yolu.") String pathInput)
+            @ShellOption(defaultValue = ".", help = "Directory or file to analyze.") String pathInput)
             throws Exception {
         analysisHandler.handle(new ModeRequest("", pathInput), IModeConsole.stdout());
     }
 
-    @ShellMethod(key = "generate", value = "Yapay zekaya kod yazdırır ve diske kaydeder.")
+    @ShellMethod(key = "generate", value = "Has the AI write code and saves it to disk.")
     public void generateCode(
-            @ShellOption(help = "Ne kodu yazılacak? (tırnak içinde yazın)") String prompt,
+            @ShellOption(help = "What code to write? (in quotes)") String prompt,
             @ShellOption(defaultValue = ShellOption.NULL,
-                    help = "Opsiyonel kayıt yolu. Boşsa generated/<SınıfAdı>.java") String out)
+                    help = "Optional output path. Default: generated/<ClassName>.java") String out)
             throws Exception {
         generateHandler.generate(prompt, out, IModeConsole.stdout());
     }

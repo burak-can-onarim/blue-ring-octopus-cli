@@ -1,6 +1,7 @@
 package com.bcoworks.blueringoctopuscli.mode;
 
 import com.bcoworks.blueringoctopuscli.context.AppMode;
+import com.bcoworks.blueringoctopuscli.i18n.Messages;
 import com.bcoworks.blueringoctopuscli.model.AiServiceRegistry;
 import com.bcoworks.blueringoctopuscli.util.PathUtils;
 import lombok.RequiredArgsConstructor;
@@ -33,6 +34,7 @@ public class GenerateModeHandler implements IModeHandler {
             Pattern.compile("(?s)" + FENCE + "[\\w+-]*\\s*\\R(.*?)\\R?" + FENCE);
 
     private final AiServiceRegistry ai;
+    private final Messages messages;
 
     @Override
     public AppMode mode() {
@@ -55,8 +57,8 @@ public class GenerateModeHandler implements IModeHandler {
             return;
         }
 
-        console.step("Model kod üretiyor...");
-        String raw = ai.forMode(AppMode.KOD_GENERATE).generateCode(prompt);
+        console.step(messages.get("generate.working"));
+        String raw = ai.forMode(AppMode.KOD_GENERATE).generateCode(messages.language().englishName(), prompt);
         if (console.isCancelled()) {
             return; // iptal edildi: dosya yazılmaz
         }
@@ -64,41 +66,40 @@ public class GenerateModeHandler implements IModeHandler {
 
         Matcher type = TYPE_DECLARATION.matcher(code);
         if (!type.find()) {
-            console.println("Uyarı: Model çıktısı geçerli bir Java tipi içermiyor, kaydedilmedi. Ham çıktı:\n" + code);
+            console.println(messages.get("warning.invalidOutput", code));
             return;
         }
 
         Path target = PathUtils.resolve(outPath.isEmpty() ? "generated/" + type.group(1) + ".java" : outPath);
 
-        console.step("Dosya kaydediliyor...");
+        console.step(messages.get("generate.saving"));
         try {
             if (target.getParent() != null) {
                 Files.createDirectories(target.getParent());
             }
             Files.writeString(target, code + System.lineSeparator(), StandardOpenOption.CREATE_NEW);
         } catch (FileAlreadyExistsException e) {
-            console.println("Hata: Dosya zaten var, üzerine yazılmadı -> " + target
-                    + "\nFarklı bir --out yolu verin.");
+            console.println(messages.get("error.fileExists", target));
             return;
         }
 
         console.println(code);
-        console.println("\nKaydedildi: " + target);
-        console.step("Tamamlandı");
+        console.println(messages.get("generate.saved", target));
+        console.step(messages.get("generate.done"));
     }
 
     private String validate(String prompt, String out) {
         if (prompt == null || prompt.isBlank()) {
-            return "Hata: Ne üretileceğini yazmalısınız.";
+            return messages.get("error.noPrompt");
         }
         if (prompt.length() > MAX_PROMPT_LENGTH) {
-            return "Hata: İstek çok uzun (en fazla %d karakter).".formatted(MAX_PROMPT_LENGTH);
+            return messages.get("error.tooLong", MAX_PROMPT_LENGTH);
         }
         if (OTHER_LANGUAGE.matcher(prompt).find() && !JAVA_WORD.matcher(prompt).find()) {
-            return "Bu ajan yalnızca Java kodu üretir. İsteğinizi Java olarak yeniden yazın.";
+            return messages.get("generate.notJava");
         }
         if (out != null && !out.isBlank() && !out.endsWith(".java")) {
-            return "Hata: --out yolu .java uzantılı olmalı.";
+            return messages.get("error.outExtension");
         }
         return null;
     }

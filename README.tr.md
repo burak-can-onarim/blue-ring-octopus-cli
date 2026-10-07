@@ -71,7 +71,8 @@ konuşur; kaynak kodunuz bilgisayarınızdan çıkmaz, yönetilecek bir API anah
 - **İki mod daha yolda:** dokümantasyon yazma ve birim testi üretme ([yol haritası](#yol-haritası)).
 
 > [!NOTE]
-> Arayüz metinleri ve analiz raporunun dili şu an **Türkçe**dir; model bilerek Türkçe yanıt vermesi için yönlendirilir.
+> Arayüz ve modelin yanıtları **English** (varsayılan), **Türkçe**, **Deutsch**, **Français**, **Italiano** ve
+> **Español** dillerinde gelir. Değiştirmek için <kbd>Ctrl</kbd>+<kbd>G</kbd>, bkz. [Language](docs/USAGE.md#language).
 
 <table>
   <tr>
@@ -137,6 +138,7 @@ Uygulamayı **argümansız** çalıştırınca arayüz açılır. <kbd>Tab</kbd>
 | <kbd>↑</kbd> <kbd>↓</kbd> | Önce satırlar arasında, sonra giriş geçmişinde gezinir |
 | <kbd>Ctrl</kbd>+<kbd>P</kbd> | Prompt ve Path alanları arasında geçiş |
 | <kbd>Ctrl</kbd>+<kbd>L</kbd> | Geçerli mod için model panelini açar |
+| <kbd>Ctrl</kbd>+<kbd>G</kbd> | Arayüz dilini seçer (model de bu dilde yanıt verir) |
 | <kbd>Ctrl</kbd>+<kbd>V</kbd> / <kbd>Shift</kbd>+<kbd>Insert</kbd> | Panodan yapıştırır |
 | <kbd>Ctrl</kbd>+<kbd>C</kbd> | Son çıktıyı panoya kopyalar |
 | <kbd>PgUp</kbd> / <kbd>PgDn</kbd>, fare tekerleği | Diyaloğu kaydırır (tekerlek uzun prompt'u da kaydırır) |
@@ -168,6 +170,7 @@ Tüm komutlar için `help` çalıştırın. Sorun giderme dahil ayrıntılar [do
 |---|---|---|
 | Varsayılan model | `AI_MODEL_NAME` ortam değişkeni | `qwen2.5-coder` |
 | Mod başına model | Arayüzde <kbd>Ctrl</kbd>+<kbd>L</kbd> (`~/.octopus-cli/models.properties` dosyasına kaydedilir) | varsayılan model |
+| Dil | Arayüzde <kbd>Ctrl</kbd>+<kbd>G</kbd> (`~/.octopus-cli/settings.properties` dosyasına kaydedilir) veya `OCTOPUS_LANG` ortam değişkeni (`en`, `tr`, `de`, `fr`, `it`, `es`) | `en` |
 | Ollama adresi | `LANGCHAIN4J_OLLAMA_CHAT_MODEL_BASE_URL` ortam değişkeni | `http://localhost:11434` |
 | Sıcaklık, zaman aşımı | `application.yaml` içinde `langchain4j.ollama.chat-model.*` | `0.2`, `5m` |
 | Log dosyası | `LOGGING_FILE_NAME` ortam değişkeni | `logs/octopus.log` |
@@ -234,9 +237,9 @@ kolaydır. Sıra diyagramları ve veri saklama modeliyle tam resim [docs/ARCHITE
 |---|---|
 | ✅ Tamam | Kod analizi modu, kod üretim modu, tam ekran arayüz, mod başına model seçimi |
 | ✅ Tamam | Tek seferlik komutlar, Docker imajı, CI ve sürüm otomasyonu |
-| 🚧 Planlanan | **Dokümantasyon yazma** modu (`Döküman Hazırlama`) |
-| 🚧 Planlanan | **Birim testi üretme** modu (`Birim Test Yazdırma`) |
-| 💡 Fikir | İngilizce (ve diğer) arayüz ve rapor dilleri |
+| ✅ Tamam | Altı arayüz dili (English, Türkçe, Deutsch, Français, Italiano, Español); model seçilen dilde yanıt verir |
+| 🚧 Planlanan | **Dokümantasyon yazma** modu |
+| 🚧 Planlanan | **Birim testi üretme** modu |
 | 💡 Fikir | Java dışındaki diller için analiz ve üretim |
 
 Fikirler taahhüt değildir. Biri sizin için önemliyse nedenini anlatan bir

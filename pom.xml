@@ -10,7 +10,7 @@
     </parent>
     <groupId>com.bcoworks</groupId>
     <artifactId>blue-ring-octopus-cli</artifactId>
-    <version>0.1.9</version>
+    <version>0.2.0</version>
     <name>Blue Ring Octopus CLI</name>
     <description>Local-first AI code analysis and generation in your terminal (Ollama + LangChain4j)</description>
     <url>https://github.com/burak-can-onarim/blue-ring-octopus-cli</url>
