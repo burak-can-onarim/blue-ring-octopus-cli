@@ -1,0 +1,9 @@
+This Java file does not compile:
+
+{{code}}
+
+The compiler reports:
+
+{{errors}}
+
+Write the complete corrected file.
