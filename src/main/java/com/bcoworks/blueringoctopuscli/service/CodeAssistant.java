@@ -43,7 +43,26 @@ public class CodeAssistant {
         Map<String, String> variables = variables();
         variables.put("fileName", fileName);
         variables.put("code", ModelOutput.numberLines(code));
-        String english = ModelOutput.toPlainText(ModelOutput.stripNotes(ask("analyze", variables), FIRST_TITLE));
+        return review("analyze.user", variables);
+    }
+
+    /**
+     * A review of one part of a file that is too long for one request (see {@link CodeSplitter}). The part already
+     * carries the original line numbers and says which lines to review; the rest of the file is context.
+     */
+    public String analyzePart(String fileName, CodeSplitter.Part part) {
+        Map<String, String> variables = variables();
+        variables.put("fileName", fileName);
+        variables.put("part", String.valueOf(part.number()));
+        variables.put("parts", String.valueOf(part.count()));
+        variables.put("focus", part.focusText());
+        variables.put("code", part.code());
+        return review("analyze.part.user", variables);
+    }
+
+    private String review(String userPrompt, Map<String, String> variables) {
+        String english = ModelOutput.toPlainText(
+                ModelOutput.stripNotes(ask("analyze.system", userPrompt, variables), FIRST_TITLE));
         if (messages.language() == Language.EN || english.isBlank()) {
             return english;
         }
@@ -51,7 +70,7 @@ public class CodeAssistant {
         String localized = ReviewLocalizer.localize(english, messages);
         Map<String, String> translation = variables();
         translation.put("text", localized);
-        String translated = ModelOutput.toPlainText(ask("translate", translation));
+        String translated = ModelOutput.toPlainText(ask("translate.system", "translate.user", translation));
         return ReviewLocalizer.keepsStructure(localized, translated, messages) ? translated : localized;
     }
 
@@ -114,9 +133,13 @@ public class CodeAssistant {
     }
 
     private String ask(String prompt, Map<String, String> variables) {
+        return ask(prompt + ".system", prompt + ".user", variables);
+    }
+
+    private String ask(String systemPrompt, String userPrompt, Map<String, String> variables) {
         List<ChatMessage> conversation = List.of(
-                SystemMessage.from(prompts.render(prompt + ".system", variables)),
-                UserMessage.from(prompts.render(prompt + ".user", variables)));
+                SystemMessage.from(prompts.render(systemPrompt, variables)),
+                UserMessage.from(prompts.render(userPrompt, variables)));
         AiMessage answer = model.generate(conversation).content();
         return answer.text() == null ? "" : answer.text();
     }

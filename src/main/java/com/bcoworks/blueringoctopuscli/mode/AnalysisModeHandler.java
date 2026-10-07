@@ -4,6 +4,7 @@ import com.bcoworks.blueringoctopuscli.context.AppMode;
 import com.bcoworks.blueringoctopuscli.i18n.Messages;
 import com.bcoworks.blueringoctopuscli.model.AiServiceRegistry;
 import com.bcoworks.blueringoctopuscli.service.CodeAssistant;
+import com.bcoworks.blueringoctopuscli.service.CodeSplitter;
 import com.bcoworks.blueringoctopuscli.service.ContextBudget;
 import com.bcoworks.blueringoctopuscli.service.SourceCodeScanner;
 import com.bcoworks.blueringoctopuscli.util.PathUtils;
@@ -20,9 +21,9 @@ import java.util.List;
 public class AnalysisModeHandler implements IModeHandler {
 
     /**
-     * Local-first koruma: bundan büyük dosyalar LLM'e gönderilmez.
+     * Local-first koruma: bundan büyük dosyalar LLM'e gönderilmez (her parça için ayrı bir model çağrısı gerekir).
      */
-    private static final long MAX_FILE_BYTES = 64 * 1024;
+    private static final long MAX_FILE_BYTES = 512 * 1024;
 
     private final AiServiceRegistry ai;
     private final SourceCodeScanner scanner;
@@ -74,8 +75,7 @@ public class AnalysisModeHandler implements IModeHandler {
                     continue;
                 }
                 if (!ContextBudget.fits(ai.numCtx(), code)) {
-                    console.println(messages.get("analysis.tooLarge", file.getFileName(),
-                            ContextBudget.estimateTokens(code), ContextBudget.codeBudget(ai.numCtx())));
+                    analyzeInParts(assistant, file.getFileName().toString(), code, i + 1, total, console);
                     continue;
                 }
                 console.step(messages.get("analysis.analyzing", i + 1, total, file.getFileName()));
@@ -87,5 +87,29 @@ public class AnalysisModeHandler implements IModeHandler {
         }
         console.progress(total, total);
         console.step(messages.get("analysis.done"));
+    }
+
+    /**
+     * A file that does not fit the model's window is reviewed in parts (see {@link CodeSplitter}), each part with the
+     * outline of the whole file, instead of being skipped.
+     */
+    private void analyzeInParts(CodeAssistant assistant, String fileName, String code, int number, int total,
+                                IModeConsole console) {
+        int budget = ContextBudget.codeBudget(ai.numCtx());
+        List<CodeSplitter.Part> parts = CodeSplitter.split(code, budget);
+        if (parts.isEmpty()) {
+            console.println(messages.get("analysis.tooLarge", fileName, ContextBudget.estimateTokens(code), budget));
+            return;
+        }
+        console.println(messages.get("analysis.split", fileName, ContextBudget.estimateTokens(code), parts.size()));
+        for (CodeSplitter.Part part : parts) {
+            if (console.isCancelled()) {
+                return;
+            }
+            console.step(messages.get("analysis.analyzingPart", number, total, fileName, part.number(), part.count()));
+            String result = assistant.analyzePart(fileName, part);
+            console.println(messages.get("analysis.part", fileName, part.number(), part.count(), part.firstLine(),
+                    part.lastLine()) + "\n" + result);
+        }
     }
 }

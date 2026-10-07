@@ -1,0 +1,11 @@
+Review one part of this Java file.
+
+File: {{fileName}} (part {{part}} of {{parts}})
+
+The file is too long for one request, so it is given in parts. Review only the code at lines {{focus}}. All other lines are context for those lines: where code is left out, "| ..." marks the gap. Do not report problems that are only in the context.
+
+<code>
+{{code}}
+</code>
+
+Write the notes first, then the answer, in English.

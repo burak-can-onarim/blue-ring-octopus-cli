@@ -64,6 +64,34 @@ class CodeAssistantTest {
     }
 
     @Test
+    void aPartOfALongFileIsReviewedWithItsOwnNumbersAndTheLinesToReview() {
+        FakeModel model = new FakeModel(ENGLISH_REVIEW);
+        CodeSplitter.Part part = new CodeSplitter.Part(2, 5, 120, 210, List.of(new int[]{120, 150}, new int[]{200, 210}),
+                List.of("run"), "7| class A {\n   | ... (lines 8-119 not shown)\n120|     void run() {\n210|     }\n211| }");
+
+        String review = new CodeAssistant(model, prompts, new Messages("en")).analyzePart("A.java", part);
+
+        assertEquals(ENGLISH_REVIEW, review);
+        assertEquals(1, model.calls.size());
+        assertTrue(model.system(0).contains("OVERVIEW") && model.system(0).contains("<notes>"), "the same system prompt as a whole file");
+        assertTrue(model.user(0).contains("File: A.java (part 2 of 5)"), model.user(0));
+        assertTrue(model.user(0).contains("Review only the code at lines 120-150, 200-210."), model.user(0));
+        assertTrue(model.user(0).contains("7| class A {\n   | ... (lines 8-119 not shown)\n120|     void run() {"));
+        assertFalse(model.user(0).contains("1| 7| "), "the numbers of the part are not numbered again");
+    }
+
+    @Test
+    void aPartIsTranslatedLikeAWholeReview() {
+        FakeModel model = new FakeModel(ENGLISH_REVIEW, "OVERVIEW\nÇeviri.");
+        CodeSplitter.Part part = new CodeSplitter.Part(1, 2, 1, 10, List.of(new int[]{1, 10}), List.of(), "1| class A {}");
+
+        new CodeAssistant(model, prompts, new Messages("tr")).analyzePart("A.java", part);
+
+        assertEquals(2, model.calls.size());
+        assertTrue(model.system(1).contains("Turkish"));
+    }
+
+    @Test
     void theNotesAndTheMarkdownNeverReachTheReader() {
         FakeModel model = new FakeModel("<notes>\nline 1: a -> b -> REAL\n</notes>\n\n### OVERVIEW\nIt **does** `things`.");
 
