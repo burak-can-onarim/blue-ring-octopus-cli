@@ -36,6 +36,8 @@ public class GenerateModeHandler implements IModeHandler {
     private static final Pattern TYPE_DECLARATION = Pattern.compile(
             "(?m)^\\s*(?:(?:public|protected|private|abstract|final|sealed|non-sealed|static)\\s+)*"
                     + "(?:class|interface|enum|record)\\s+(\\w+)");
+    private static final Pattern EXTRA_PUBLIC_TYPE = Pattern.compile(
+            "(?m)^public(\\s+(?:(?:abstract|final|sealed|non-sealed|strictfp)\\s+)*(?:class|interface|enum|record)\\s+(\\w+))");
     private static final Pattern FENCED_BLOCK =
             Pattern.compile("(?s)" + FENCE + "[\\w+-]*\\s*\\R(.*?)\\R?" + FENCE);
 
@@ -76,6 +78,7 @@ public class GenerateModeHandler implements IModeHandler {
             return;
         }
         String typeName = type.group(1);
+        code = demoteExtraPublicTypes(code, typeName);
 
         console.step(messages.get("generate.checking"));
         Verified verified = verify(assistant, typeName, code, console);
@@ -118,6 +121,7 @@ public class GenerateModeHandler implements IModeHandler {
         if (console.isCancelled() || !declaresType(repaired, typeName)) {
             return new Verified(code, first, 0);
         }
+        repaired = demoteExtraPublicTypes(repaired, typeName);
         CompileCheck.Result second = CompileCheck.check(typeName, repaired);
         if (second.checked() && second.problems().size() < first.problems().size()) {
             return new Verified(repaired, second, first.problems().size());
@@ -183,6 +187,22 @@ public class GenerateModeHandler implements IModeHandler {
             return messages.get("error.outExtension");
         }
         return null;
+    }
+
+    /**
+     * The file is saved as {@code <MainType>.java}, and Java allows one public top-level type per file. Small models
+     * often put a helper type next to the main one and mark it public too (in 3 of 3 JPA samples), which can never
+     * compile; the helper loses its {@code public}.
+     */
+    public static String demoteExtraPublicTypes(String code, String typeName) {
+        Matcher matcher = EXTRA_PUBLIC_TYPE.matcher(code);
+        StringBuilder out = new StringBuilder();
+        while (matcher.find()) {
+            matcher.appendReplacement(out, Matcher.quoteReplacement(
+                    matcher.group(2).equals(typeName) ? matcher.group() : matcher.group(1).stripLeading()));
+        }
+        matcher.appendTail(out);
+        return out.toString();
     }
 
     /**

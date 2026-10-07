@@ -134,6 +134,35 @@ class GenerateModeHandlerTest {
     }
 
     @Test
+    void aHelperTypeNextToTheMainTypeLosesItsPublicSoTheFileCanCompile() throws IOException {
+        String twoTypes = "public class Greeter {\n    Helper helper = new Helper();\n}\n\npublic final class Helper {\n}\n"
+                + "\npublic interface Other {\n}";
+
+        generate(handlerAnswering(8192, twoTypes));
+
+        assertEquals(1, prompts.size(), "nothing left to repair");
+        String saved = saved();
+        assertTrue(saved.contains("public class Greeter"), saved);
+        assertTrue(saved.contains("\nfinal class Helper"), saved);
+        assertTrue(saved.contains("\ninterface Other"), saved);
+        assertTrue(output().contains("Compile check passed."), output());
+    }
+
+    @Test
+    void onlyTopLevelPublicTypesAreDemoted() {
+        String code = "public class Main {\n    public static class Nested {\n    }\n    public record R(int x) {\n    }\n}\n"
+                + "public record Extra(int y) {\n}\n// public class Commented {}\n";
+
+        String result = GenerateModeHandler.demoteExtraPublicTypes(code, "Main");
+
+        assertTrue(result.contains("public class Main"));
+        assertTrue(result.contains("    public static class Nested"));
+        assertTrue(result.contains("    public record R(int x)"));
+        assertTrue(result.contains("\nrecord Extra(int y)"));
+        assertTrue(result.contains("// public class Commented {}"));
+    }
+
+    @Test
     void aMissingLibraryIsReportedAndIsNotRepaired() throws IOException {
         String controller = "import org.springframework.web.bind.annotation.RestController;\n\n@RestController\n"
                 + "public class Greeter {\n}";
