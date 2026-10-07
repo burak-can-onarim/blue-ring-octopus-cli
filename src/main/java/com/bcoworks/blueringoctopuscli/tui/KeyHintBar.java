@@ -46,6 +46,7 @@ final class KeyHintBar extends AbstractComponent<KeyHintBar> {
     private final int groupWidth;
     private List<Row> rows;
     private int[] columnWidths;
+    private int[] keyWidths;
 
     KeyHintBar(List<Row> rows) {
         this(rows, GROUP_WIDTH);
@@ -65,18 +66,36 @@ final class KeyHintBar extends AbstractComponent<KeyHintBar> {
     void setRows(List<Row> rows) {
         this.rows = List.copyOf(rows);
         this.columnWidths = columnWidths(this.rows);
+        this.keyWidths = keyWidths(this.rows);
         invalidate();
     }
 
     /**
-     * Her sütunun genişliği: o sütundaki en geniş çift. Satırlarda çift sayısı farklı olabilir.
+     * Her sütunun tuş kısmının genişliği: o sütundaki en uzun tuş. Açıklamalar bu genişlikten sonra başlar, böylece
+     * satırlar arasında yalnızca ayraçlar değil açıklamalar da alt alta gelir.
      */
-    static int[] columnWidths(List<Row> rows) {
+    static int[] keyWidths(List<Row> rows) {
         int columns = rows.stream().mapToInt(row -> row.hints().size()).max().orElse(0);
         int[] widths = new int[columns];
         for (Row row : rows) {
             for (int i = 0; i < row.hints().size(); i++) {
-                widths[i] = Math.max(widths[i], row.hints().get(i).width());
+                widths[i] = Math.max(widths[i], row.hints().get(i).key().length());
+            }
+        }
+        return widths;
+    }
+
+    /**
+     * Her sütunun genişliği: tuş sütunu + boşluk (tuş varsa) + o sütundaki en uzun açıklama. Satırlarda çift sayısı
+     * farklı olabilir.
+     */
+    static int[] columnWidths(List<Row> rows) {
+        int[] keys = keyWidths(rows);
+        int[] widths = new int[keys.length];
+        for (Row row : rows) {
+            for (int i = 0; i < row.hints().size(); i++) {
+                int label = row.hints().get(i).label().length();
+                widths[i] = Math.max(widths[i], keys[i] + (keys[i] > 0 ? 1 : 0) + label);
             }
         }
         return widths;
@@ -133,21 +152,21 @@ final class KeyHintBar extends AbstractComponent<KeyHintBar> {
                         x += SEPARATOR.length();
                     }
                     if (column < row.hints().size()) {
-                        draw(graphics, x, y, row.hints().get(column));
+                        draw(graphics, x, y, row.hints().get(column), keyWidths[column]);
                     }
                     x += columnWidths[column];
                 }
             }
         }
 
-        private void draw(TextGUIGraphics graphics, int x, int y, Hint hint) {
-            int labelX = x;
+        private void draw(TextGUIGraphics graphics, int x, int y, Hint hint, int keyWidth) {
+            // Açıklama, sütunun en uzun tuşundan sonra başlar (tuş yoksa sütun başında).
+            int labelX = keyWidth > 0 ? x + keyWidth + 1 : x;
             if (!hint.key().isEmpty()) {
                 graphics.setForegroundColor(hint.keyColor());
                 graphics.enableModifiers(SGR.BOLD);
                 graphics.putString(x, y, hint.key());
                 graphics.disableModifiers(SGR.BOLD);
-                labelX = x + hint.key().length() + 1;
             }
             graphics.setForegroundColor(hint.labelColor());
             graphics.putString(labelX, y, hint.label());

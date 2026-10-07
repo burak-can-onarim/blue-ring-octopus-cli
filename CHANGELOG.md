@@ -8,6 +8,12 @@ contain breaking changes.
 
 ## [Unreleased]
 
+### Changed
+
+- The shortcut bar also aligns the descriptions: within a column the keys are padded to the same width, so keys,
+  descriptions and the " · " separators line up across both rows.
+- The legend of the model panel is stacked in three rows (green `●` selected, blue `+` installed, grey `-` missing).
+
 ## [0.1.7] - 2026-10-07
 
 ### Changed
