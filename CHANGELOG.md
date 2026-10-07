@@ -8,6 +8,11 @@ contain breaking changes.
 
 ## [Unreleased]
 
+### Changed
+
+- The shortcut bar no longer shows the **Giriş** and **Gezinme** group labels. The two rows start with the keys, so
+  the whole width is available for shortcuts.
+
 ## [0.1.8] - 2026-10-07
 
 ### Changed

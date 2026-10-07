@@ -33,30 +33,17 @@ final class KeyHintBar extends AbstractComponent<KeyHintBar> {
         }
     }
 
-    record Row(String group, List<Hint> hints) {
-
-        Row(List<Hint> hints) {
-            this("", hints);
-        }
+    record Row(List<Hint> hints) {
     }
 
-    static final int GROUP_WIDTH = 10;
     static final String SEPARATOR = " · ";
+    private static final int MARGIN = 1;
 
-    private final int groupWidth;
     private List<Row> rows;
     private int[] columnWidths;
     private int[] keyWidths;
 
     KeyHintBar(List<Row> rows) {
-        this(rows, GROUP_WIDTH);
-    }
-
-    /**
-     * @param groupWidth grup adı sütununun genişliği; 0 ise grup adı çizilmez
-     */
-    KeyHintBar(List<Row> rows, int groupWidth) {
-        this.groupWidth = groupWidth;
         setRows(rows);
     }
 
@@ -133,18 +120,10 @@ final class KeyHintBar extends AbstractComponent<KeyHintBar> {
             graphics.setBackgroundColor(OctopusTheme.BASE);
             graphics.fill(' ');
 
-            int start = 1 + groupWidth;
-            int visible = visibleColumns(columnWidths, graphics.getSize().getColumns() - start);
+            int visible = visibleColumns(columnWidths, graphics.getSize().getColumns() - MARGIN);
             for (int y = 0; y < rows.size(); y++) {
                 Row row = rows.get(y);
-                if (groupWidth > 0) {
-                    graphics.setForegroundColor(OctopusTheme.MAUVE);
-                    graphics.enableModifiers(SGR.BOLD);
-                    graphics.putString(1, y, row.group());
-                    graphics.disableModifiers(SGR.BOLD);
-                }
-
-                int x = start;
+                int x = MARGIN;
                 for (int column = 0; column < visible; column++) {
                     if (column > 0) {
                         graphics.setForegroundColor(OctopusTheme.MUTED);

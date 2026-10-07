@@ -12,8 +12,8 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 class KeyHintBarTest {
 
     private static final List<Row> ROWS = List.of(
-            new Row("A", List.of(new Hint("Enter", "Gönder"), new Hint("Tab", "Mod"), new Hint("Esc", "İptal"))),
-            new Row("B", List.of(new Hint("Ctrl+L", "Model"), new Hint("PgUp/PgDn", "Kaydır"))));
+            new Row(List.of(new Hint("Enter", "Gönder"), new Hint("Tab", "Mod"), new Hint("Esc", "İptal"))),
+            new Row(List.of(new Hint("Ctrl+L", "Model"), new Hint("PgUp/PgDn", "Kaydır"))));
 
     @Test
     void widthIsKeyPlusSpacePlusLabel() {

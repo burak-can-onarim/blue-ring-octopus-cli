@@ -75,7 +75,7 @@ final class MainWindow implements MouseSupport.Handler {
     private final Label progressLabel = new Label(BLANK_PROGRESS);
 
     private final Label modelModeLabel = new Label("");
-    private final KeyHintBar modelStatusBar = new KeyHintBar(List.of(new KeyHintBar.Row(List.of())), 0);
+    private final KeyHintBar modelStatusBar = new KeyHintBar(List.of(new KeyHintBar.Row(List.of())));
     private final Label activeModelLabel = new Label("");
     private final ModelList modelList = new ModelList();
 
@@ -326,13 +326,13 @@ final class MainWindow implements MouseSupport.Handler {
 
         KeyHintBar keyHints = new KeyHintBar(List.of(
                 // Sütunlar satırlar arasında hizalanır; benzer genişlikteki maddeler aynı sütuna konur ki boşluklar dengeli kalsın.
-                new KeyHintBar.Row("Giriş", List.of(
+                new KeyHintBar.Row(List.of(
                         new KeyHintBar.Hint("Enter", "Gönder"),
                         new KeyHintBar.Hint("Shift+Enter", "Yeni satır"),
                         new KeyHintBar.Hint("Ctrl+C", "Kopyala"),
                         new KeyHintBar.Hint("Ctrl+V", "Yapıştır"),
                         new KeyHintBar.Hint("↑↓", "Geçmiş"))),
-                new KeyHintBar.Row("Gezinme", List.of(
+                new KeyHintBar.Row(List.of(
                         new KeyHintBar.Hint("Tab", "Mod"),
                         new KeyHintBar.Hint("PgUp/PgDn", "Kaydır"),
                         new KeyHintBar.Hint("Ctrl+P", "Prompt/Path"),
@@ -375,7 +375,7 @@ final class MainWindow implements MouseSupport.Handler {
         KeyHintBar legend = new KeyHintBar(List.of(
                 new KeyHintBar.Row(List.of(new KeyHintBar.Hint("●", "seçili", OctopusTheme.GREEN, OctopusTheme.MUTED))),
                 new KeyHintBar.Row(List.of(new KeyHintBar.Hint("+", "kurulu", OctopusTheme.BLUE, OctopusTheme.MUTED))),
-                new KeyHintBar.Row(List.of(new KeyHintBar.Hint("-", "yok", OctopusTheme.MUTED, OctopusTheme.MUTED)))), 0);
+                new KeyHintBar.Row(List.of(new KeyHintBar.Hint("-", "yok", OctopusTheme.MUTED, OctopusTheme.MUTED)))));
         // Panel genişliğini bu çubuklar belirlemesin: model listesiyle aynı iç genişlik
         legend.setPreferredSize(new TerminalSize(SIDE_INNER, 3));
         modelStatusBar.setPreferredSize(new TerminalSize(SIDE_INNER, 1));
