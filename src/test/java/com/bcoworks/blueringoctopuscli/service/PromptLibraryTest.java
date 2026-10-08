@@ -26,6 +26,7 @@ class PromptLibraryTest {
         Map<String, Set<String>> expected = Map.ofEntries(
                 Map.entry("analyze.system", Set.of()),
                 Map.entry("analyze.user", Set.of("fileName", "code")),
+                Map.entry("analyze.part.user", Set.of("fileName", "part", "parts", "focus", "code")),
                 Map.entry("translate.system", Set.of("language")),
                 Map.entry("translate.user", Set.of("text")),
                 Map.entry("generate.system", allowed()),

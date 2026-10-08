@@ -100,8 +100,16 @@ Switch modes with <kbd>Tab</kbd>. The hint line above the input shows what the c
 
 Limits and behaviour worth knowing:
 
-- Files larger than **64 KB**, or too big for the model's context window (see [Configuration reference](#configuration-reference)),
-  are skipped and listed with a message; the model would otherwise see only a fragment of them.
+- A file that is too big for the model's context window (see [Configuration reference](#configuration-reference)) is
+  reviewed in parts. Each part contains a few methods in full and the outline of the whole file (imports, the head of
+  every type, the signature of every other method), and the line numbers stay those of the file. A part is announced in
+  the output (`--- Big.java, part 2/5 (lines 120-210) ---`) and has its own overview, findings and summary. This takes
+  one model call per part (two for another language than English), so a very big file takes a while; <kbd>Esc</kbd> asks to cancel it.
+  Problems that depend on code in a different part (a field changed in one method and read in another) can be missed;
+  a bigger `octopus.model.num-ctx` makes fewer, larger parts. In the measurements a good model found *more* problems in
+  small parts than in one big request, at the price of more (partly generic) findings, see [PROMPTS.md](PROMPTS.md).
+- Files larger than **512 KB** are skipped and listed with a message. If even the outline leaves too little room in the
+  window for code, the file is skipped with a hint to raise `octopus.model.num-ctx`.
 - A review is written in English first and translated for the other languages, see [PROMPTS.md](PROMPTS.md).
 - These folders are never scanned: `.git`, `.idea`, `.mvn`, `.vscode`, `.gradle`, `target`, `build`, `node_modules`, `logs`.
 - Code generation is **Java only**. A request that names another language (Python, C#, ...) without mentioning Java is

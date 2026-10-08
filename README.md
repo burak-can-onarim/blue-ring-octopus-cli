@@ -51,7 +51,7 @@ manage and no per-token bill.
 | **Local-first** | Prompts and source files are sent only to the Ollama instance you configure (`localhost` by default). |
 | **No running costs** | No cloud account, no API key, no token metering. Pick any model Ollama can run. |
 | **Built for Java** | Reviews cover bugs, security, performance and Clean Code. Generation produces a compilable Java type and saves it to disk. |
-| **Safe by default** | Existing files are never overwritten, oversized files are skipped, and every long task can be cancelled. |
+| **Safe by default** | Existing files are never overwritten, files over 512 KB are skipped, and every long task can be cancelled. |
 | **A real terminal UI** | A full-screen [Lanterna](https://github.com/mabe02/lanterna) interface with history, multi-line prompts, clipboard support and a live model panel. |
 
 ## Features
@@ -59,8 +59,8 @@ manage and no per-token bill.
 - **Code analysis mode.** Scans a file or a whole directory for `.java` files and reviews each one for security
   problems, bugs, performance risks and Clean Code violations. Build and tooling folders (`.git`, `target`,
   `node_modules`, ...) are skipped. A review explains what the code does, lists the problems with line numbers and
-  severity, and ends with a verdict. Files that do not fit the model's context window are skipped with a message
-  instead of being cut silently.
+  severity, and ends with a verdict. A file that does not fit the model's context window is reviewed in parts, a few
+  methods at a time, each part with the outline of the whole file, instead of being skipped or cut silently.
 - **Code generation mode.** Describe a class in plain language; the model returns Java source, Markdown fences are
   stripped, the type name is detected and the file is written to `generated/<ClassName>.java` (or a path you choose).
   The code is compiled in process before it is saved; if it has errors, the model gets the compiler's messages once and
