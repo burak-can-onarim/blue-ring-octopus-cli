@@ -13,8 +13,9 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * What the application asks of the model: review a file, write a class, write tests, document a file. Every call is one
- * system message and one user message built from the files under {@code prompts/} (see {@link PromptLibrary}).
+ * What the application asks of the model: review a file, write a class (and fix it when it does not compile), write
+ * tests, document a file. Every call is one system message and one user message built from the files under
+ * {@code prompts/} (see {@link PromptLibrary}).
  * <p>
  * A small local model reasons best in English and cannot reliably do an analysis and write the report in another
  * language in one go. So a review is always made in English; for any other language the application puts the frame
@@ -61,6 +62,27 @@ public class CodeAssistant {
         Map<String, String> variables = variables();
         variables.put("prompt", request);
         return ask("generate", variables);
+    }
+
+    /**
+     * The same file with the compile errors fixed. The model gets the file and what the compiler said, line by line.
+     */
+    public String repairCode(String code, List<CompileCheck.Problem> problems) {
+        Map<String, String> variables = variables();
+        variables.put("code", code);
+        variables.put("errors", describe(problems));
+        return ask("repair", variables);
+    }
+
+    public static String describe(List<CompileCheck.Problem> problems) {
+        StringBuilder errors = new StringBuilder();
+        for (CompileCheck.Problem problem : problems) {
+            errors.append("line ").append(problem.line()).append(": ").append(problem.message()).append('\n');
+            if (!problem.sourceLine().isEmpty()) {
+                errors.append("    ").append(problem.sourceLine()).append('\n');
+            }
+        }
+        return errors.toString().stripTrailing();
     }
 
     /**

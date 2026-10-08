@@ -90,7 +90,7 @@ The UI picks the handler for the current mode through `ModeDispatcher`; the one-
 | `i18n` | `Language` (the six interface languages) and `Messages` (every text shown to the user, loaded from `i18n/messages_<code>.properties`). |
 | `mode` | One handler per mode, the dispatcher, the `ModeRequest` value object and the `IModeConsole` abstraction. |
 | `model` | Everything about *which* model is used: client registry, installed-model discovery, per-mode settings, suggestions. |
-| `service` | `CodeAssistant` (what is asked of the model), `PromptLibrary` (the prompt files), `ReviewLocalizer`, `ContextBudget` and `SourceCodeScanner`. See [PROMPTS.md](PROMPTS.md). |
+| `service` | `CodeAssistant` (what is asked of the model), `PromptLibrary` (the prompt files), `ReviewLocalizer`, `ContextBudget`, `CompileCheck` (compiles generated code in process) and `SourceCodeScanner`. See [PROMPTS.md](PROMPTS.md). |
 | `tui` | The Lanterna user interface. |
 | `util` | `PathUtils`: quote stripping and relative-path resolution. |
 
@@ -193,14 +193,29 @@ flowchart TD
     cancelled -- no --> strip["Strip Markdown fences"]
     strip --> detect{"Contains a<br/>class / interface / enum / record?"}
     detect -- no --> err2[/"Warn and show raw output<br/>(not saved)"/]
-    detect -- yes --> target["Target = --out, or<br/>generated/&lt;TypeName&gt;.java"]
+    detect -- yes --> demote["Extra public top-level types<br/>lose their public"]
+    demote --> compile["Compile in process<br/>(CompileCheck, JDK only)"]
+    compile --> own{"Errors of the code's own?<br/>(a missing library is not one)"}
+    own -- no --> target
+    own -- yes --> repair["Model gets the file and the errors<br/>once (repair prompt)"]
+    repair --> better{"Fewer errors,<br/>same main type?"}
+    better -- yes --> target["Use the repaired file.<br/>Target = --out, or generated/&lt;TypeName&gt;.java"]
+    better -- no --> target2["Keep the first file"]
+    target2 --> write
     target --> write["Write with CREATE_NEW"]
     write -- file exists --> err3[/"Refuse to overwrite"/]
-    write -- ok --> done([Saved])
+    write -- ok --> done([Saved, then the result of the<br/>compile check is printed])
 ```
 
 The language check is a deliberate heuristic: a request that names another language (and not Java) is rejected
 *before* the model is called, so no time is spent on output the tool would not accept.
+
+`CompileCheck` compiles the file with the JDK's own compiler (`javax.tools`), in memory and with an empty class path, so
+the libraries of the application never leak into the check. Errors that only say that a library is missing (`package ...
+does not exist` outside `java.*`, and the "cannot find symbol" errors for the names such an import brought in) are not
+counted as problems of the code; the packages are reported as not checked. A repair costs one more model call and is
+skipped when the file and its answer would not fit the context window. A runtime without a compiler (the Docker image
+has a JRE) skips the check and says so.
 
 ## Data and persistence
 

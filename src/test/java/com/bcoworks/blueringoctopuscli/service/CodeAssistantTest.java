@@ -159,6 +159,25 @@ class CodeAssistantTest {
     }
 
     @Test
+    void aRepairSendsTheCodeAndTheCompilerErrorsLineByLine() {
+        FakeModel model = new FakeModel("class A {}");
+        List<CompileCheck.Problem> problems = List.of(
+                new CompileCheck.Problem(5, "cannot find symbol symbol: method push(String)", "list.push(\"x\");"),
+                new CompileCheck.Problem(9, "';' expected", ""));
+
+        String fixed = new CodeAssistant(model, prompts, new Messages("en")).repairCode("class A {\n}", problems);
+
+        assertEquals("class A {}", fixed);
+        assertEquals(1, model.calls.size());
+        assertTrue(model.system(0).contains("complete corrected file"));
+        assertTrue(model.user(0).contains("class A {\n}"));
+        assertTrue(model.user(0).contains(
+                "line 5: cannot find symbol symbol: method push(String)\n    list.push(\"x\");\nline 9: ';' expected"),
+                model.user(0));
+        assertFalse(model.user(0).contains("1| "), "the code is not numbered, the answer must be raw source");
+    }
+
+    @Test
     void anEmptyAnswerStaysEmptyAndTheModelIsAskedOnce() {
         FakeModel model = new FakeModel();
 

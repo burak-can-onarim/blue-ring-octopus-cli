@@ -23,17 +23,19 @@ class PromptLibraryTest {
 
     @Test
     void everyPromptExistsAndOnlyUsesPlaceholdersTheAssistantFills() {
-        Map<String, Set<String>> expected = Map.of(
-                "analyze.system", Set.of(),
-                "analyze.user", Set.of("fileName", "code"),
-                "translate.system", Set.of("language"),
-                "translate.user", Set.of("text"),
-                "generate.system", allowed(),
-                "generate.user", allowed("prompt"),
-                "tests.system", allowed(),
-                "tests.user", allowed("fileName", "code"),
-                "document.system", allowed(),
-                "document.user", allowed("fileName", "code"));
+        Map<String, Set<String>> expected = Map.ofEntries(
+                Map.entry("analyze.system", Set.of()),
+                Map.entry("analyze.user", Set.of("fileName", "code")),
+                Map.entry("translate.system", Set.of("language")),
+                Map.entry("translate.user", Set.of("text")),
+                Map.entry("generate.system", allowed()),
+                Map.entry("generate.user", allowed("prompt")),
+                Map.entry("repair.system", allowed()),
+                Map.entry("repair.user", allowed("code", "errors")),
+                Map.entry("tests.system", allowed()),
+                Map.entry("tests.user", allowed("fileName", "code")),
+                Map.entry("document.system", allowed()),
+                Map.entry("document.user", allowed("fileName", "code")));
 
         expected.forEach((name, allowedNames) -> {
             Set<String> used = PromptLibrary.placeholders(prompts.template(name));
@@ -61,9 +63,14 @@ class PromptLibraryTest {
 
     @Test
     void everySystemPromptExceptTheAnalysisTellsTheModelWhichLanguageToWriteIn() {
-        for (String name : List.of("translate", "generate", "tests", "document", "inventory")) {
+        for (String name : List.of("translate", "generate", "repair", "tests", "document", "inventory")) {
             assertTrue(PromptLibrary.placeholders(prompts.template(name + ".system")).contains("language"), name);
         }
+    }
+
+    @Test
+    void theRepairPromptCarriesTheCodeAndTheCompilerErrors() {
+        assertTrue(PromptLibrary.placeholders(prompts.template("repair.user")).containsAll(Set.of("code", "errors")));
     }
 
     @Test
@@ -76,7 +83,7 @@ class PromptLibraryTest {
 
     @Test
     void thePromptsStayShortEnoughForASmallContextWindow() {
-        for (String name : List.of("analyze", "translate", "generate", "tests", "document", "inventory")) {
+        for (String name : List.of("analyze", "translate", "generate", "repair", "tests", "document", "inventory")) {
             int words = prompts.template(name + ".system").split("\\s+").length;
             assertTrue(words <= 700, name + ".system has " + words + " words");
         }

@@ -63,7 +63,8 @@ manage and no per-token bill.
   instead of being cut silently.
 - **Code generation mode.** Describe a class in plain language; the model returns Java source, Markdown fences are
   stripped, the type name is detected and the file is written to `generated/<ClassName>.java` (or a path you choose).
-  An existing file is never overwritten.
+  The code is compiled in process before it is saved; if it has errors, the model gets the compiler's messages once and
+  writes the file again. The result of the check is printed under the file. An existing file is never overwritten.
 - **A model per mode.** Choose a different Ollama model for each mode with <kbd>Ctrl</kbd>+<kbd>L</kbd>. The panel
   colours the models: the selected one green, installed ones blue (`+`) and missing ones grey (`-`). The choice is
   remembered between runs.
