@@ -106,7 +106,8 @@ Limits and behaviour worth knowing:
   the output (`--- Big.java, part 2/5 (lines 120-210) ---`) and has its own overview, findings and summary. This takes
   one model call per part (two for another language than English), so a very big file takes a while; <kbd>Esc</kbd> asks to cancel it.
   Problems that depend on code in a different part (a field changed in one method and read in another) can be missed;
-  a bigger `octopus.model.num-ctx` makes fewer, larger parts.
+  a bigger `octopus.model.num-ctx` makes fewer, larger parts. In the measurements a good model found *more* problems in
+  small parts than in one big request, at the price of more (partly generic) findings, see [PROMPTS.md](PROMPTS.md).
 - Files larger than **512 KB** are skipped and listed with a message. If even the outline leaves too little room in the
   window for code, the file is skipped with a hint to raise `octopus.model.num-ctx`.
 - A review is written in English first and translated for the other languages, see [PROMPTS.md](PROMPTS.md).

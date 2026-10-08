@@ -23,8 +23,9 @@ contain breaking changes.
   compile). Every part holds the outline of the whole file and writes out only its own members, with the line numbers of
   the file, and the prompt (`analyze.part.user.txt`) asks the model to review only those lines. A method larger than the
   window is cut into overlapping pieces. Each part is announced in the output and has its own overview, findings and
-  summary. In a trial with the 7B model the recall of known problems was the same as for the whole file (within noise),
-  but more parts produce more, mostly generic, findings, so fewer and larger parts are better. See
+  summary. In a trial on a class with 12 known problems the 7B model found about as many as for the whole file
+  (within noise), but `gemma4:26b` found 35 of 36 in 4 parts against 29 of 36 for the whole file, and `gemma4:e4b`
+  31 of 36 against 22. More parts also produce more, partly generic, findings. See
   [docs/PROMPTS.md](docs/PROMPTS.md).
 
 ### Changed

@@ -118,22 +118,26 @@ The final prompt finds somewhat fewer of the seeded problems than the old, long 
 points at lines, and invents far less. It is the best balance found with this model; a larger model will do better.
 Without the notes step it found 56 %. Section titles are present in 15 of 16 runs.
 
-**Review in parts** (one class with 12 of the known problems from the three samples plus nine clean methods, 1,700 tokens;
-`qwen2.5-coder` 7B, 3 seeds; run as a whole in the 8192 window, then cut by `CodeSplitter` with a budget of 1,200 tokens
-(2 parts) and 500 tokens (4 parts), the production code path):
+**Review in parts** (one class with 12 of the known problems from the three samples plus nine clean methods, 1,700 tokens,
+3 seeds; run as a whole in the 8192 window, then cut by `CodeSplitter` with a budget of 1,200 tokens (2 parts) and 500
+tokens (4 parts), the production code path). Known problems found, per seed, of 12:
 
-| | Known problems found (of 12, per seed) | Recall | Rated findings per run | Words per run |
-|---|---|---|---|---|
-| Whole file | 5, 6, 4 | 0.42 | 5, 7, 4 | 227 |
-| 2 parts | 6, 5, 8 | 0.53 | 6, 12, 7 | 320 |
-| 4 parts | 2, 6, 6 | 0.39 | 5, 13, 13 | 585 |
+| Model | Whole file | 2 parts | 4 parts |
+|---|---|---|---|
+| `qwen2.5-coder` 7B | 5, 6, 4 (0.42) | 6, 5, 8 (0.53) | 2, 6, 6 (0.39) |
+| `gemma4:e4b` (thinking off) | 6, 9, 7 (0.61) | 11, 9, 10 (0.83) | 11, 10, 10 (0.86) |
+| `gemma4:26b` (thinking off) | 10, 10, 9 (0.81) | 11, 10, 11 (0.89) | 12, 12, 11 (0.97) |
 
-With 3 seeds and 12 problems the differences in recall are within noise, so the honest reading is: **reviewing in parts
-does not lose recall, and it does not gain any either**. What does change is the amount: the more parts, the more findings,
-and the extra ones are mostly generic ("the return value of X can be null" on clean methods). The 4-part runs reported
-13 findings for 6 real ones. So fewer, larger parts are better; raise `octopus.model.num-ctx` before accepting many small
-parts. A trial on a real 22 KB file (`CodeSplitter.java`, 2 parts, 7B) ran through, but the answer was poor: one part said
-"no issues", the other listed three non-findings. That is the 7B model, as before, not the cutting.
+Rated findings per run: 7B 5, 7, 4 (whole), 6, 12, 7 (2 parts), 5, 13, 13 (4 parts); `gemma4:e4b` 7 to 10, 9 to 12,
+17; `gemma4:26b` 10, 11 to 12, 14.
+
+With 3 seeds and 12 problems this is a small experiment, but the direction is the same for both `gemma4` models and every
+seed: **a model that reasons well finds more when it reads fewer methods at a time**, and the 4-part runs of
+`gemma4:26b` found 35 of 36 known problems. The 7B model does not profit (its differences are within noise). The price is
+the amount: more parts mean more findings, and the extra ones are mostly generic ("the return value of X can be null" on
+clean methods). The 7B reported 13 findings for 6 real ones in its 4-part runs, `gemma4:e4b` 17 for at most 12, and
+`gemma4:26b` only 14. A trial on a real 22 KB file (`CodeSplitter.java`, 2 parts, 7B) ran through, but the answer was
+poor: one part said "no issues", the other listed three non-findings. That is the 7B model, as before, not the cutting.
 
 **Code generation** (5 requests, compiled with `javac`; 2 seeds for the old prompt, 3 for the final one): 8 of 10
 compiled with the old prompt, 15 of 15 with the final one (standalone file, imports, no unknown types). The old prompt
