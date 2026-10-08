@@ -60,7 +60,8 @@ manage and no per-token bill.
   problems, bugs, performance risks and Clean Code violations. Build and tooling folders (`.git`, `target`,
   `node_modules`, ...) are skipped. A review explains what the code does, lists the problems with line numbers and
   severity, and ends with a verdict. A file that does not fit the model's context window is reviewed in parts, a few
-  methods at a time, each part with the outline of the whole file, instead of being skipped or cut silently.
+  methods at a time, each part with the outline of the whole file, and the reviews are merged into one, instead of the
+  file being skipped or cut silently.
 - **Code generation mode.** Describe a class in plain language; the model returns Java source, Markdown fences are
   stripped, the type name is detected and the file is written to `generated/<ClassName>.java` (or a path you choose).
   The code is compiled in process before it is saved; if it has errors, the model gets the compiler's messages once and

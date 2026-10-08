@@ -4,6 +4,8 @@ octopus:
     num-ctx: 8192        # context window in tokens; Ollama's own default is smaller and cuts long prompts silently
     max-tokens: 4096     # upper limit for one answer, so a model that loops cannot run forever
     think: off           # off | auto | low | medium | high; off lets thinking models (gemma4, qwen3, ...) answer directly
+  analysis:
+    part-tokens: 0       # 0: a file that fits the window is reviewed in one piece; above 0: a file bigger than this many tokens is reviewed in parts of at most that size
 
 spring:
   application:

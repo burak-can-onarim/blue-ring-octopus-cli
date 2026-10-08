@@ -31,6 +31,8 @@ class PromptLibraryTest {
                 Map.entry("translate.user", Set.of("text")),
                 Map.entry("generate.system", allowed()),
                 Map.entry("generate.user", allowed("prompt")),
+                Map.entry("merge.system", Set.of()),
+                Map.entry("merge.user", Set.of("fileName", "reviews")),
                 Map.entry("repair.system", allowed()),
                 Map.entry("repair.user", allowed("code", "errors")),
                 Map.entry("tests.system", allowed()),
@@ -84,7 +86,7 @@ class PromptLibraryTest {
 
     @Test
     void thePromptsStayShortEnoughForASmallContextWindow() {
-        for (String name : List.of("analyze", "translate", "generate", "repair", "tests", "document", "inventory")) {
+        for (String name : List.of("analyze", "merge", "translate", "generate", "repair", "tests", "document", "inventory")) {
             int words = prompts.template(name + ".system").split("\\s+").length;
             assertTrue(words <= 700, name + ".system has " + words + " words");
         }

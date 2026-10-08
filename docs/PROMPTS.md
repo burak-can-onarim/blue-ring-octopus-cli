@@ -23,6 +23,7 @@ Plain text files in `src/main/resources/prompts/`, one `<name>.system.txt` and o
 |---|---|---|
 | `analyze` | Code Analysis | English only; the review is always made in English |
 | `analyze.part` (user prompt only) | Code Analysis, a file that does not fit | Same system prompt as `analyze`; names the lines to review |
+| `merge` | Code Analysis, after the parts of a file | One review from the English reviews of the parts; English only |
 | `translate` | Code Analysis, other languages | Translates the free text of a review; has a glossary for the five other languages |
 | `generate` | Code Generation | One Java source file that compiles on its own |
 | `repair` | Code Generation, after a failed compile check | The same file with the compiler's errors fixed |
@@ -101,8 +102,16 @@ reviewed on its own, with the same system prompt as a whole file (`analyze.syste
 - When the outline would take more than half of the window, it shrinks step by step (without imports, then only the heads
   of the types). A member that does not fit at all is cut into pieces of lines that overlap by 8 lines, each with the
   signature of the member.
-- Every part has its own overview, findings and summary and is announced in the output. For another language than English
-  every part is translated by the second call as usual.
+- The parts are reviewed in English one after another, then **one more call merges their reviews** (`merge.system.txt`,
+  `merge.user.txt`): it gets the overviews and findings of the parts, without their summaries and without any code, and
+  writes one review in the usual three sections: duplicates joined, findings ordered by severity and numbered again, one
+  overview, one verdict. It is told to invent nothing and to drop nothing. For another language than English only the
+  merged review is translated, so the merge also saves the translation call of every part.
+- A merge is not trusted blindly: `ReviewMerge` checks that the answer still has OVERVIEW, FINDINGS and SUMMARY and that it
+  still names at least 70 % of the line numbers that the parts reported. If not, or if the reviews of the parts would not
+  fit the window, the parts are shown one by one, each translated on its own, announced with its lines.
+- `octopus.analysis.part-tokens` (default 0 = off) lowers the size of a part, so that a file that *fits* the window is
+  cut as well. A file smaller than the setting, or too small to cut, is reviewed whole.
 
 ## Thinking models and the token limit
 
@@ -194,6 +203,23 @@ clean methods). The 7B reported 13 findings for 6 real ones in its 4-part runs, 
 `gemma4:26b` only 14. A trial on a real 22 KB file (`CodeSplitter.java`, 2 parts, 7B) ran through, but the answer was
 poor: one part said "no issues", the other listed three non-findings. That is the 7B model, as before, not the cutting.
 
+**Merging the reviews of the parts** (the same class and seeds, thinking off; the parts are reviewed in English and merged
+by one more call, as the application does it). Known problems found, per seed, of 12, and the amount of output:
+
+| Model | Cut into | Parts shown one after another | Merged into one review |
+|---|---|---|---|
+| `gemma4:26b` | 4 parts | 12, 12, 11 (0.97), 14, 14, 14 findings, 755 words | 12, 12, 11 (0.97), 14, 13, 13 findings, 595 words |
+| `gemma4:26b` | 2 parts | 11, 10, 11 (0.89), 12, 11, 11 findings, 508 words | 10, 10, 11 (0.86), 12, 11, 11 findings, 479 words |
+| `qwen2.5-coder` 7B | 4 parts | 2, 6, 6 (0.39), 5, 13, 13 findings, 585 words | 5, 6, 7 (0.50), 16, 8, 5 findings, 391 words |
+| `qwen2.5-coder` 7B | 2 parts | 6, 5, 8 (0.53), 6, 12, 7 findings, 320 words | 7, 6, 7 (0.56), 6, 5, 8 findings, 260 words |
+
+The merge keeps what the parts found (no run was refused by the check, 12 of 12 merges were accepted) and gives one
+report with one verdict instead of four, up to 20 % shorter for `gemma4:26b`. It removes few findings, because a good model
+hardly repeats itself and a weak model does not merge well: the 7B left "hard-coded credentials" as four separate
+entries for four lines. The runs differ from the earlier ones in the table above (a different client), so the
+comparison is of rows, not of single numbers; with 3 seeds a difference of one or two problems is noise. A merge costs
+one more call (about 50 s with `gemma4:26b`).
+
 **Code generation** (5 requests, compiled with `javac`; 2 seeds for the old prompt, 3 for the final one): 8 of 10
 compiled with the old prompt, 15 of 15 with the final one (standalone file, imports, no unknown types). The old prompt
 produced no Javadoc.
@@ -235,11 +261,10 @@ the code does not have.
 - A thread-safe cache is still written without synchronization by this model, and test expectations for behaviour the
   code does not show are sometimes wrong. The compile-and-repair step catches compile errors but not these.
 - A review in parts cannot see a problem that needs two bodies that are in different parts (a field written in one
-  method and read unsynchronized in another, a resource opened in one method and closed in another). It also costs one
-  model call per part, and its reports are not merged: there is no overall verdict, and a problem that concerns the shared
-  fields can be reported by several parts. Ideas that were considered but not built: grouping methods that share fields
-  into the same part, a last call that merges and de-duplicates the findings of all parts, and reviewing only the risky
-  methods of a very big file.
+  method and read unsynchronized in another, a resource opened in one method and closed in another). It costs one model
+  call per part plus the merge, and nothing is shown before the merge is done. A weak model merges badly (it keeps
+  duplicates). Ideas that were considered but not built: grouping methods that share fields into the same part,
+  reviewing only the risky methods of a very big file, a pass over the shared fields across all parts.
 - The prompts were tuned with the 7B model and measured on it; the larger models were run with the same prompts and not tuned for. The lists in `ModelCatalog` follow the table above and say nothing about models that were not measured. The Documentation and Unit Tests modes do not exist yet, so their lists are copied from the nearest task.
 
 ## Changing a prompt

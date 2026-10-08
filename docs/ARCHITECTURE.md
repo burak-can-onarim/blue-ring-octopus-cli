@@ -90,7 +90,7 @@ The UI picks the handler for the current mode through `ModeDispatcher`; the one-
 | `i18n` | `Language` (the six interface languages) and `Messages` (every text shown to the user, loaded from `i18n/messages_<code>.properties`). |
 | `mode` | One handler per mode, the dispatcher, the `ModeRequest` value object and the `IModeConsole` abstraction. |
 | `model` | Everything about *which* model is used: client registry, `OllamaChat` (the `/api/chat` client that can switch thinking off), installed-model discovery, per-mode settings, suggestions. |
-| `service` | `CodeAssistant` (what is asked of the model), `PromptLibrary` (the prompt files), `ReviewLocalizer`, `ContextBudget`, `CompileCheck` (compiles generated code in process), `CodeSplitter` (cuts a big file into parts) and `SourceCodeScanner`. See [PROMPTS.md](PROMPTS.md). |
+| `service` | `CodeAssistant` (what is asked of the model), `PromptLibrary` (the prompt files), `ReviewLocalizer`, `ContextBudget`, `CompileCheck` (compiles generated code in process), `CodeSplitter` (cuts a big file into parts), `ReviewMerge` (checks the merge of their reviews) and `SourceCodeScanner`. See [PROMPTS.md](PROMPTS.md). |
 | `tui` | The Lanterna user interface. |
 | `util` | `PathUtils`: quote stripping and relative-path resolution. |
 
@@ -170,15 +170,18 @@ sequenceDiagram
     R-->>A: CodeAssistant for the selected model
     loop every file
         A->>A: cancelled? skip blank files and files over 512 KB
-        alt the file fits the context window
+        alt the file fits the window (and part-tokens is 0 or not exceeded)
             A->>M: analyze(file): English review, translated for other languages
             M-->>A: review text
         else too big
             A->>A: CodeSplitter.split(code, budget): parts with the outline of the file
             loop every part (cancellation is checked before each)
-                A->>M: analyzePart(file, part): same review prompt, "review only lines a-b"
-                M-->>A: review text of the part
+                A->>M: reviewPart(file, part): same review prompt, "review only lines a-b", in English
+                M-->>A: English review of the part
             end
+            A->>M: mergeParts(...): one review from the English reviews (merge prompt)
+            M-->>A: merged review, refused if it lost the lines of the findings
+            A->>M: localize(merged): translation of the free text, other languages only
         end
         A-->>W: console.println(review) / progress(i, total)
     end
@@ -196,6 +199,12 @@ that is not in this part, with `| ...` for what was left out) and the members of
 dropped step by step (imports first, then the other signatures) when it would take more than half of the window. A member
 that does not fit at all is cut into overlapping pieces of lines. Lines keep their numbers from the file. Without any
 braces the whole text is treated as one such member.
+
+`octopus.analysis.part-tokens` (0 = off) lowers the budget of a part, so a file that fits the window is cut too. The reviews
+of the parts are made in English without the translation step; `ReviewMerge` hands them to the merge prompt without
+their summaries and afterwards checks that the merged review still has the three sections and still names at least 70 %
+of the lines the parts reported. If not (or if the reviews would not fit the window), the parts are shown one by one,
+each localized on its own.
 
 ## Flow: code generation
 

@@ -8,16 +8,17 @@ import com.bcoworks.blueringoctopuscli.service.CodeSplitter;
 import com.bcoworks.blueringoctopuscli.service.ContextBudget;
 import com.bcoworks.blueringoctopuscli.service.SourceCodeScanner;
 import com.bcoworks.blueringoctopuscli.util.PathUtils;
-import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.List;
 
 @Component
-@RequiredArgsConstructor
 public class AnalysisModeHandler implements IModeHandler {
 
     /**
@@ -28,6 +29,24 @@ public class AnalysisModeHandler implements IModeHandler {
     private final AiServiceRegistry ai;
     private final SourceCodeScanner scanner;
     private final Messages messages;
+    private final int partTokens;
+
+    /**
+     * @param partTokens {@code octopus.analysis.part-tokens}: 0 reviews a file in one piece when it fits the window; above 0
+     *                   a file bigger than that many tokens is reviewed in parts of at most that size, also if it fits
+     */
+    @Autowired
+    public AnalysisModeHandler(AiServiceRegistry ai, SourceCodeScanner scanner, Messages messages,
+                               @Value("${octopus.analysis.part-tokens:0}") int partTokens) {
+        this.ai = ai;
+        this.scanner = scanner;
+        this.messages = messages;
+        this.partTokens = Math.max(0, partTokens);
+    }
+
+    public AnalysisModeHandler(AiServiceRegistry ai, SourceCodeScanner scanner, Messages messages) {
+        this(ai, scanner, messages, 0);
+    }
 
     @Override
     public AppMode mode() {
@@ -74,13 +93,13 @@ public class AnalysisModeHandler implements IModeHandler {
                 if (code.isBlank()) {
                     continue;
                 }
-                if (!ContextBudget.fits(ai.numCtx(), code)) {
-                    analyzeInParts(assistant, file.getFileName().toString(), code, i + 1, total, console);
-                    continue;
+                boolean fits = ContextBudget.fits(ai.numCtx(), code);
+                boolean askedForParts = fits && partTokens > 0 && ContextBudget.estimateTokens(code) > partTokens;
+                if (!fits || askedForParts) {
+                    analyzeInParts(assistant, file.getFileName().toString(), code, fits, i + 1, total, console);
+                } else {
+                    analyzeWhole(assistant, file.getFileName().toString(), code, i + 1, total, console);
                 }
-                console.step(messages.get("analysis.analyzing", i + 1, total, file.getFileName()));
-                String result = assistant.analyze(file.getFileName().toString(), code);
-                console.println("\n--- " + file.getFileName() + " ---\n" + result);
             } catch (IOException e) {
                 console.println(messages.get("analysis.unreadable", file.getFileName(), e.getMessage()));
             }
@@ -89,27 +108,66 @@ public class AnalysisModeHandler implements IModeHandler {
         console.step(messages.get("analysis.done"));
     }
 
+    private void analyzeWhole(CodeAssistant assistant, String fileName, String code, int number, int total,
+                              IModeConsole console) {
+        console.step(messages.get("analysis.analyzing", number, total, fileName));
+        String result = assistant.analyze(fileName, code);
+        console.println("\n--- " + fileName + " ---\n" + result);
+    }
+
     /**
-     * A file that does not fit the model's window is reviewed in parts (see {@link CodeSplitter}), each part with the
-     * outline of the whole file, instead of being skipped.
+     * A file that does not fit the model's window (or is bigger than {@code octopus.analysis.part-tokens}) is reviewed in
+     * parts (see {@link CodeSplitter}), each part with the outline of the whole file. The reviews of the parts are made
+     * in English and merged into one review (duplicates joined, one overview and verdict), which is then put into the
+     * selected language once. If the merge cannot be trusted the parts are shown one by one.
      */
-    private void analyzeInParts(CodeAssistant assistant, String fileName, String code, int number, int total,
-                                IModeConsole console) {
-        int budget = ContextBudget.codeBudget(ai.numCtx());
+    private void analyzeInParts(CodeAssistant assistant, String fileName, String code, boolean fitsWindow, int number,
+                                int total, IModeConsole console) {
+        int window = ContextBudget.codeBudget(ai.numCtx());
+        int budget = partTokens > 0 ? Math.min(partTokens, window) : window;
         List<CodeSplitter.Part> parts = CodeSplitter.split(code, budget);
-        if (parts.isEmpty()) {
-            console.println(messages.get("analysis.tooLarge", fileName, ContextBudget.estimateTokens(code), budget));
+        if (parts.size() < 2 && fitsWindow) { // the setting asked for parts, but this file does not split
+            analyzeWhole(assistant, fileName, code, number, total, console);
             return;
         }
-        console.println(messages.get("analysis.split", fileName, ContextBudget.estimateTokens(code), parts.size()));
+        if (parts.isEmpty()) {
+            console.println(messages.get("analysis.tooLarge", fileName, ContextBudget.estimateTokens(code), window));
+            return;
+        }
+        console.println(fitsWindow
+                ? messages.get("analysis.splitBySetting", fileName, parts.size(), budget)
+                : messages.get("analysis.split", fileName, ContextBudget.estimateTokens(code), parts.size()));
+
+        List<String> reviews = new ArrayList<>();
         for (CodeSplitter.Part part : parts) {
             if (console.isCancelled()) {
                 return;
             }
             console.step(messages.get("analysis.analyzingPart", number, total, fileName, part.number(), part.count()));
-            String result = assistant.analyzePart(fileName, part);
+            reviews.add(assistant.reviewPart(fileName, part));
+        }
+
+        if (parts.size() > 1) {
+            if (console.isCancelled()) {
+                return;
+            }
+            console.step(messages.get("analysis.merging", fileName));
+            String merged = assistant.mergeParts(fileName, parts, reviews, window);
+            if (console.isCancelled()) {
+                return;
+            }
+            if (!merged.isBlank()) {
+                console.println(messages.get("analysis.merged", fileName, parts.size()) + "\n" + assistant.localize(merged));
+                return;
+            }
+        }
+        for (int i = 0; i < parts.size(); i++) { // one part, or a merge that could not be trusted
+            if (console.isCancelled()) {
+                return;
+            }
+            CodeSplitter.Part part = parts.get(i);
             console.println(messages.get("analysis.part", fileName, part.number(), part.count(), part.firstLine(),
-                    part.lastLine()) + "\n" + result);
+                    part.lastLine()) + "\n" + assistant.localize(reviews.get(i)));
         }
     }
 }
