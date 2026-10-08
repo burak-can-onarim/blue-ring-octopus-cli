@@ -8,6 +8,11 @@ contain breaking changes.
 
 ## [Unreleased]
 
+## [0.7.0] - 2026-10-08
+
+Three changes that were developed one on top of the other (pull requests #23, #24 and #25) are released together; 0.5.0 and
+0.6.0 were never released on their own.
+
 ### Added
 
 - **Compile check and one repair for generated code.** The generated file is compiled in process (the JDK's compiler, no
@@ -247,7 +252,8 @@ contain breaking changes.
 - `start-agent.bat` launcher for Windows with a model picker.
 - Windows archive with a bundled JRE.
 
-[Unreleased]: https://github.com/burak-can-onarim/blue-ring-octopus-cli/compare/v0.4.0...HEAD
+[Unreleased]: https://github.com/burak-can-onarim/blue-ring-octopus-cli/compare/v0.7.0...HEAD
+[0.7.0]: https://github.com/burak-can-onarim/blue-ring-octopus-cli/compare/v0.4.0...v0.7.0
 [0.4.0]: https://github.com/burak-can-onarim/blue-ring-octopus-cli/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/burak-can-onarim/blue-ring-octopus-cli/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/burak-can-onarim/blue-ring-octopus-cli/compare/v0.1.8...v0.2.0
