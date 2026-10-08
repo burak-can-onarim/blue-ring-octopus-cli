@@ -137,11 +137,12 @@ Each mode remembers its own model, so you can use a small fast model for reviews
   <br><sub>Code Generation mode: the selected model (green) is not installed, the installed one (blue) can be chosen, the rest are grey.</sub>
 </p>
 
-The list has suggestions for the mode, best first (for example `qwen3-coder:30b` and `qwen2.5-coder:14b` for code
-generation, `gpt-oss:20b` for reviews and documentation), plus anything else you have installed. The order is a
-recommendation, not a measurement: the prompts were tuned with `qwen2.5-coder` (7B), which fits a graphics card with
-8 GB. Bigger models need more memory and are slower; try one before you rely on it. Your choice is stored in
-`~/.octopus-cli/models.properties`.
+The list has suggestions for the mode, best first (`gemma4:26b` for reviews and for code, then `gpt-oss:20b`, `ornith:9b`,
+`gemma4:12b` and `qwen2.5-coder`), plus anything else you have installed. The order follows measurements with this
+application's prompts, see [PROMPTS.md](PROMPTS.md#which-model): `gemma4:26b` found every seeded problem and wrote
+compiling code in 27 of 28 tries, but it needs about 18 GB of memory in total and takes about a minute per review.
+`qwen2.5-coder` (7B), which the prompts were tuned with, fits a graphics card with 8 GB and answers in seconds, with
+weaker reviews. Your choice is stored in `~/.octopus-cli/models.properties`.
 
 ## One-shot commands
 
@@ -197,6 +198,7 @@ The model is asked to answer in the same language, and so are the mode names, hi
 | `OCTOPUS_LANG` | environment variable, or <kbd>Ctrl</kbd>+<kbd>G</kbd> in the UI | `en`; the UI choice is stored in `~/.octopus-cli/settings.properties` |
 | `octopus.model.num-ctx` | `OCTOPUS_MODEL_NUM_CTX` | `8192` (tokens; the context window asked from Ollama, whose own default cuts long prompts silently) |
 | `octopus.model.max-tokens` | `OCTOPUS_MODEL_MAX_TOKENS` | `4096` (upper limit for one answer) |
+| `octopus.model.think` | `OCTOPUS_MODEL_THINK` | `off` (`think: false` is sent, so a thinking model such as `gemma4` answers directly; `auto` sends nothing and lets the model decide; `low`, `medium`, `high` set the effort of models that take a level, like `gpt-oss`) |
 
 Any Spring Boot property can be overridden with an environment variable (dots and dashes become underscores, upper
 case) or with `--property=value` on the command line.
@@ -213,6 +215,13 @@ Run the `ollama pull <name>` command that the application prints.
 **The analysis stops with a timeout.**
 Large models on CPU can take minutes per file. Raise `langchain4j.ollama.chat-model.timeout` (default `5m`) or pick a
 smaller model.
+
+**The model answers with nothing, or a review is empty.**
+The model is probably a *thinking* model whose reasoning used up `octopus.model.max-tokens` before it wrote the answer.
+The default `octopus.model.think=off` prevents that for models that can switch thinking off. `gpt-oss` cannot: it always
+thinks. In the measurements `OCTOPUS_MODEL_THINK=low` made its code generation work (28 of 28 files, 13 of 28 without an
+answer before) and weakened its reviews (0.98 down to 0.60), so use `gpt-oss` for reviews and another model for code,
+or raise `OCTOPUS_MODEL_MAX_TOKENS` (not measured). With `OCTOPUS_MODEL_THINK=auto` every thinking model thinks again.
 
 **`UnsupportedClassVersionError` or "class file version 69.0".**
 The JAR needs Java 25. Run `java -version` and install a JDK 25 build.

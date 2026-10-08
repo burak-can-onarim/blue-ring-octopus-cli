@@ -31,10 +31,18 @@ class ModelCatalogTest {
     }
 
     @Test
-    void theListsDifferByWhatTheModeNeeds() {
-        assertEquals("qwen3-coder:30b", ModelCatalog.suggestedFor(AppMode.CODE_GENERATION).getFirst());
-        assertEquals("qwen3-coder:30b", ModelCatalog.suggestedFor(AppMode.UNIT_TESTS).getFirst());
-        assertEquals("gpt-oss:20b", ModelCatalog.suggestedFor(AppMode.CODE_ANALYSIS).getFirst());
-        assertEquals("gpt-oss:20b", ModelCatalog.suggestedFor(AppMode.DOCUMENTATION).getFirst());
+    void theListsFollowTheMeasurements() {
+        assertEquals("gemma4:26b", ModelCatalog.suggestedFor(AppMode.CODE_ANALYSIS).getFirst());
+        assertEquals("gemma4:26b", ModelCatalog.suggestedFor(AppMode.CODE_GENERATION).getFirst());
+        assertTrue(ModelCatalog.suggestedFor(AppMode.CODE_ANALYSIS).contains("ornith:9b"), "a fast reviewer");
+        assertFalse(ModelCatalog.suggestedFor(AppMode.CODE_GENERATION).contains("ornith:9b"), "it writes code that rarely compiles");
+        assertFalse(ModelCatalog.suggestedFor(AppMode.CODE_GENERATION).contains("gpt-oss:20b"),
+                "it runs out of tokens while it thinks, unless it is told to think less");
+    }
+
+    @Test
+    void theModesThatDoNotExistYetUseTheListOfTheNearestMeasuredTask() {
+        assertEquals(ModelCatalog.suggestedFor(AppMode.CODE_ANALYSIS), ModelCatalog.suggestedFor(AppMode.DOCUMENTATION));
+        assertEquals(ModelCatalog.suggestedFor(AppMode.CODE_GENERATION), ModelCatalog.suggestedFor(AppMode.UNIT_TESTS));
     }
 }

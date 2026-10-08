@@ -74,7 +74,7 @@ flowchart TB
     handlers --> scanner
     handlers --> registry --> service
     registry --> models
-    registry -->|"chat (OllamaChatModel)"| ollama
+    registry -->|"chat (OllamaChat, /api/chat)"| ollama
     models -->|"GET /api/tags"| ollama
 ```
 
@@ -89,7 +89,7 @@ The UI picks the handler for the current mode through `ModeDispatcher`; the one-
 | `context` | `AppMode` (the four modes) and `AppContext` (the current mode). |
 | `i18n` | `Language` (the six interface languages) and `Messages` (every text shown to the user, loaded from `i18n/messages_<code>.properties`). |
 | `mode` | One handler per mode, the dispatcher, the `ModeRequest` value object and the `IModeConsole` abstraction. |
-| `model` | Everything about *which* model is used: client registry, installed-model discovery, per-mode settings, suggestions. |
+| `model` | Everything about *which* model is used: client registry, `OllamaChat` (the `/api/chat` client that can switch thinking off), installed-model discovery, per-mode settings, suggestions. |
 | `service` | `CodeAssistant` (what is asked of the model), `PromptLibrary` (the prompt files), `ReviewLocalizer`, `ContextBudget`, `CompileCheck` (compiles generated code in process), `CodeSplitter` (cuts a big file into parts) and `SourceCodeScanner`. See [PROMPTS.md](PROMPTS.md). |
 | `tui` | The Lanterna user interface. |
 | `util` | `PathUtils`: quote stripping and relative-path resolution. |

@@ -182,10 +182,10 @@ Tüm komutlar için `help` çalıştırın. Sorun giderme dahil ayrıntılar [do
 
 ```bash
 # Windows (PowerShell)
-$env:AI_MODEL_NAME = "qwen2.5-coder:14b"
+$env:AI_MODEL_NAME = "gemma4:26b"
 
 # Linux / macOS
-export AI_MODEL_NAME="qwen2.5-coder:14b"
+export AI_MODEL_NAME="gemma4:26b"
 ```
 
 ## Docker ile çalıştırma

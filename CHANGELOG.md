@@ -8,6 +8,11 @@ contain breaking changes.
 
 ## [Unreleased]
 
+## [0.7.0] - 2026-10-08
+
+Three changes that were developed one on top of the other (pull requests #23, #24 and #25) are released together; 0.5.0 and
+0.6.0 were never released on their own.
+
 ### Added
 
 - **Compile check and one repair for generated code.** The generated file is compiled in process (the JDK's compiler, no
@@ -27,9 +32,21 @@ contain breaking changes.
   (within noise), but `gemma4:26b` found 35 of 36 in 4 parts against 29 of 36 for the whole file, and `gemma4:e4b`
   31 of 36 against 22. More parts also produce more, partly generic, findings. See
   [docs/PROMPTS.md](docs/PROMPTS.md).
+- **Thinking models work.** A model that thinks first (`gemma4`, `qwen3`, `gpt-oss`, ...) used up the 4,096-token answer
+  limit on its reasoning for a long prompt and returned nothing: `gemma4:12b` and `gemma4:26b` scored 0.13 and 0.00 in
+  reviews. LangChain4j 0.35 cannot send Ollama's `think` option, so a small client for `/api/chat` (`OllamaChat`) replaces
+  its `OllamaChatModel`. The new setting `octopus.model.think` (`OCTOPUS_MODEL_THINK`) is `off` by default and sends
+  `think: false`; `auto` sends nothing, `low`, `medium` and `high` set the effort of models that take a level. With it
+  `gemma4:26b` found every seeded problem of the review sample and compiled 27 of 28 generated files. Models that cannot
+  think ignore it; `gpt-oss` cannot switch thinking off.
+- A comparison of eight models with the application's prompts, in [docs/PROMPTS.md](docs/PROMPTS.md#which-model).
 
 ### Changed
 
+- **The model suggestions follow the measurements.** `gemma4:26b` is first for reviews and code, then `gpt-oss:20b`
+  (reviews), `ornith:9b` (reviews), `gemma4:12b` and `qwen2.5-coder`. Models that were measured and did worse than the 7B
+  or were dominated (`qwen2.5-coder:14b`, `qwen3-coder:30b`, `granite4.1:8b`) are no longer suggested, and neither are
+  models that were not measured.
 - A helper type that the model writes next to the main type loses its `public`, because a file can hold only one public
   type and the file is named after the first.
 - The file size limit of the review goes from 64 KB to 512 KB, because big files are no longer skipped for not fitting.
@@ -235,7 +252,8 @@ contain breaking changes.
 - `start-agent.bat` launcher for Windows with a model picker.
 - Windows archive with a bundled JRE.
 
-[Unreleased]: https://github.com/burak-can-onarim/blue-ring-octopus-cli/compare/v0.4.0...HEAD
+[Unreleased]: https://github.com/burak-can-onarim/blue-ring-octopus-cli/compare/v0.7.0...HEAD
+[0.7.0]: https://github.com/burak-can-onarim/blue-ring-octopus-cli/compare/v0.4.0...v0.7.0
 [0.4.0]: https://github.com/burak-can-onarim/blue-ring-octopus-cli/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/burak-can-onarim/blue-ring-octopus-cli/compare/v0.2.0...v0.3.0
 [0.2.0]: https://github.com/burak-can-onarim/blue-ring-octopus-cli/compare/v0.1.8...v0.2.0
