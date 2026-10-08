@@ -184,10 +184,10 @@ Run `help` for the full command list. More detail, including troubleshooting, is
 
 ```bash
 # Windows (PowerShell)
-$env:AI_MODEL_NAME = "qwen2.5-coder:14b"
+$env:AI_MODEL_NAME = "gemma4:26b"
 
 # Linux / macOS
-export AI_MODEL_NAME="qwen2.5-coder:14b"
+export AI_MODEL_NAME="gemma4:26b"
 ```
 
 ## Run with Docker

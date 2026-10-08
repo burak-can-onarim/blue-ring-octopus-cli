@@ -7,6 +7,8 @@ change a prompt.
 - [How a call is made](#how-a-call-is-made)
 - [The review](#the-review)
 - [The context window](#the-context-window)
+- [Thinking models and the token limit](#thinking-models-and-the-token-limit)
+- [Which model](#which-model)
 - [What was measured](#what-was-measured)
 - [What did not work](#what-did-not-work)
 - [Limits and next steps](#limits-and-next-steps)
@@ -102,9 +104,62 @@ reviewed on its own, with the same system prompt as a whole file (`analyze.syste
 - Every part has its own overview, findings and summary and is announced in the output. For another language than English
   every part is translated by the second call as usual.
 
+## Thinking models and the token limit
+
+A thinking model (gemma4, qwen3, gpt-oss, laguna, ...) writes its reasoning first, and the reasoning counts against the
+4,096 tokens that `octopus.model.max-tokens` allows for one answer. On a short question that is harmless; on a code review
+the reasoning can use all of it and the answer is empty. The first measurement of `gemma4:12b` and `gemma4:26b` found
+recall 0.13 and 0.00 for exactly this reason, and the very same models found 0.92 and 1.00 once Ollama was told
+`think: false`. LangChain4j 0.35 (2024) cannot send that option, so `OllamaChat` is a small client for `/api/chat` that does
+(`octopus.model.think`, default `off`; `auto` sends nothing; `low`, `medium` and `high` are for models that take a level).
+Models that cannot think ignore `think: false`; `gpt-oss` always thinks and ignores it too.
+
+`gpt-oss:20b` shows that the right effort depends on the task. At its default effort a review is excellent (0.98) but 13
+of 28 generations had no answer left; at effort `low` all 28 generations came back (28 of 28 compile after a repair, in
+49 s instead of 178 s) but the review fell to 0.60 and several answers were a few words long. A single setting cannot
+serve both, so `gpt-oss:20b` is suggested for reviews only.
+
+## Which model
+
+The same prompts and samples for every model, thinking off, on an RTX 4060 (8 GB) with 16 GB of main memory (a model larger
+than about 8 GB runs partly on the CPU, which is where the times come from). Review: 4 seeds on the three samples with 12
+known problems (16 reviews) and the clean control file. Generation: 14 requests x 2 seeds = 28 files, compiled the way the
+application does it, one repair; the time includes the repair call.
+
+| Model | Size | Review: known problems found | Invented on the clean file (4 runs) | Time per review | Generation: compile first try / after repair (of 28) | Time per file |
+|---|---|---|---|---|---|---|
+| `gemma4:26b` | 18 GB | **1.00** | 0, 0, 0, 0 | 47 s | 25 / **27** | 97 s |
+| `gpt-oss:20b` | 13 GB | 0.98 | 0, 0, 0, 0 | 123 s | 11 / 13 (13 files without an answer) | 178 s |
+| `gpt-oss:20b`, effort `low` | 13 GB | 0.60 | 0, 0, 0, 0 | 22 s | 26 / **28** | 49 s |
+| `laguna-xs-2.1` | 20 GB | 0.98 | 0, 0, 0, 0 | 64 s | 16 / 21 | 105 s |
+| `gemma4:12b` | 8 GB | 0.92 | 0, 0, 0, 0 | 61 s | 20 / 24 | 93 s |
+| `ornith:9b` | 5.6 GB | 0.83 | 0, 0, 0, 0 | 18 s | 12 / 20 | 33 s |
+| `qwen2.5-coder` (7B) | 4.7 GB | 0.65 | 1, 0, 0, 7 | 8 s | 20 / 25 | 10 s |
+| `gemma4:e4b` | 6.6 GB | 0.58 | 0, 1, 0, 0 | 5 s | 23 / 24 | 8 s |
+
+An earlier round with 2 review seeds and 14 generation files (one seed) removed three models: `qwen2.5-coder:14b` found
+0.54 (below the 7B, five times slower), `qwen3-coder:30b` found 0.71 with two or three invented problems per clean file
+and a complete review in only 3 of 8 runs, and `granite4.1:8b` compiled 8 of 14 files even after a repair.
+
+How to read it, and how far to trust it: 16 reviews and 28 files per model are enough to see the large differences
+(a model that returns nothing, 0.58 against 1.00, 12 against 27 compiling files) but not the small ones; `gemma4:e4b`
+changed from 0.83 with 2 seeds to 0.58 with 4. The samples are small Java files and one made-up request list. Nothing here
+says how a model does on a real project.
+
+- `gemma4:26b` is the best model measured for both tasks, and it is faster than `gpt-oss:20b` and `laguna-xs-2.1` for
+  reviews. It needs about 18 GB: with 8 GB of video memory and 16 GB of main memory Ollama runs a part of it on the CPU.
+- `gemma4:12b` is the same family in 8 GB, a little weaker; the choice for a machine that cannot hold the 26b.
+- `ornith:9b` fits the graphics card completely and reviews well (0.83 in 18 s), but its generated code compiles in only
+  20 of 28 files even after a repair: a reviewer, not a code writer.
+- `qwen2.5-coder` (7B) is the fast default the prompts were tuned with: 8 s per review, 25 of 28 files compile. Its reviews
+  are the least reliable of the group (and once invented 7 problems in a clean file).
+- `laguna-xs-2.1` is as good as `gemma4:26b` at reviews but larger, slower and weaker at generation. `gemma4:e4b`
+  is fast but reviews worse than the 7B.
+
 ## What was measured
 
-Everything below was measured with `qwen2.5-coder` (7B, Q4) on an RTX 4060, temperature 0.2, several seeds per prompt.
+Everything below, except the comparison of models above, was measured with `qwen2.5-coder` (7B, Q4) on an RTX 4060,
+temperature 0.2, several seeds per prompt.
 The samples are small Java files with known problems plus one clean file that must not get findings.
 
 **Review** (3 files with 12 known problems in total plus the clean control file; 3 seeds for the old prompt, 4 for the final one):
@@ -185,8 +240,7 @@ the code does not have.
   fields can be reported by several parts. Ideas that were considered but not built: grouping methods that share fields
   into the same part, a last call that merges and de-duplicates the findings of all parts, and reviewing only the risky
   methods of a very big file.
-- The model lists in `ModelCatalog` are recommendations based on what the models are good at, not measurements. Only
-  the 7B model was run here; a 14B or 20B model should be tried before trusting the order.
+- The prompts were tuned with the 7B model and measured on it; the larger models were run with the same prompts and not tuned for. The lists in `ModelCatalog` follow the table above and say nothing about models that were not measured. The Documentation and Unit Tests modes do not exist yet, so their lists are copied from the nearest task.
 
 ## Changing a prompt
 
