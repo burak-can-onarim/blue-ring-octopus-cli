@@ -4,7 +4,7 @@ import com.bcoworks.blueringoctopuscli.context.AppMode;
 import com.bcoworks.blueringoctopuscli.i18n.Messages;
 import com.bcoworks.blueringoctopuscli.service.CodeAssistant;
 import com.bcoworks.blueringoctopuscli.service.PromptLibrary;
-import dev.langchain4j.model.ollama.OllamaChatModel;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
@@ -25,7 +25,9 @@ public class AiServiceRegistry {
     private final Duration timeout;
     private final int numCtx;
     private final int maxTokens;
+    private final OllamaChat.Think think;
 
+    @Autowired
     public AiServiceRegistry(
             ModelSettings settings,
             PromptLibrary prompts,
@@ -34,7 +36,8 @@ public class AiServiceRegistry {
             @Value("${langchain4j.ollama.chat-model.temperature:0.2}") double temperature,
             @Value("${langchain4j.ollama.chat-model.timeout:5m}") Duration timeout,
             @Value("${octopus.model.num-ctx:8192}") int numCtx,
-            @Value("${octopus.model.max-tokens:4096}") int maxTokens) {
+            @Value("${octopus.model.max-tokens:4096}") int maxTokens,
+            @Value("${octopus.model.think:off}") String think) {
         this.settings = settings;
         this.prompts = prompts;
         this.messages = messages;
@@ -43,6 +46,15 @@ public class AiServiceRegistry {
         this.timeout = timeout;
         this.numCtx = numCtx;
         this.maxTokens = maxTokens;
+        this.think = OllamaChat.Think.parse(think);
+    }
+
+    /**
+     * With the default way of thinking (off), see {@code octopus.model.think}.
+     */
+    public AiServiceRegistry(ModelSettings settings, PromptLibrary prompts, Messages messages, String baseUrl,
+                             double temperature, Duration timeout, int numCtx, int maxTokens) {
+        this(settings, prompts, messages, baseUrl, temperature, timeout, numCtx, maxTokens, "off");
     }
 
     /**
@@ -65,14 +77,7 @@ public class AiServiceRegistry {
     }
 
     private CodeAssistant create(String modelName) {
-        OllamaChatModel model = OllamaChatModel.builder()
-                .baseUrl(baseUrl)
-                .modelName(modelName)
-                .temperature(temperature)
-                .timeout(timeout)
-                .numCtx(numCtx)
-                .numPredict(maxTokens)
-                .build();
+        OllamaChat model = new OllamaChat(baseUrl, modelName, temperature, timeout, numCtx, maxTokens, think);
         return new CodeAssistant(model, prompts, messages);
     }
 }
