@@ -8,6 +8,8 @@ contain breaking changes.
 
 ## [Unreleased]
 
+## [0.8.0] - 2026-10-09
+
 ### Added
 
 - **The reviews of the parts of a big file are merged into one.** After the parts are reviewed (in English, without the
@@ -269,7 +271,8 @@ Three changes that were developed one on top of the other (pull requests #23, #2
 - `start-agent.bat` launcher for Windows with a model picker.
 - Windows archive with a bundled JRE.
 
-[Unreleased]: https://github.com/burak-can-onarim/blue-ring-octopus-cli/compare/v0.7.0...HEAD
+[Unreleased]: https://github.com/burak-can-onarim/blue-ring-octopus-cli/compare/v0.8.0...HEAD
+[0.8.0]: https://github.com/burak-can-onarim/blue-ring-octopus-cli/compare/v0.7.0...v0.8.0
 [0.7.0]: https://github.com/burak-can-onarim/blue-ring-octopus-cli/compare/v0.4.0...v0.7.0
 [0.4.0]: https://github.com/burak-can-onarim/blue-ring-octopus-cli/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/burak-can-onarim/blue-ring-octopus-cli/compare/v0.2.0...v0.3.0
