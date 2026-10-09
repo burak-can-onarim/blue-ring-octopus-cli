@@ -51,18 +51,56 @@ public class CodeAssistant {
      * carries the original line numbers and says which lines to review; the rest of the file is context.
      */
     public String analyzePart(String fileName, CodeSplitter.Part part) {
+        return localize(reviewPart(fileName, part));
+    }
+
+    /**
+     * The same review of a part, in English and not yet put into the selected language: the reviews of all parts are
+     * merged first ({@link #mergeParts}) and the merged review is localized once.
+     */
+    public String reviewPart(String fileName, CodeSplitter.Part part) {
         Map<String, String> variables = variables();
         variables.put("fileName", fileName);
         variables.put("part", String.valueOf(part.number()));
         variables.put("parts", String.valueOf(part.count()));
         variables.put("focus", part.focusText());
         variables.put("code", part.code());
-        return review("analyze.part.user", variables);
+        return english("analyze.part.user", variables);
+    }
+
+    /**
+     * One review of the whole file from the English reviews of its parts: duplicates merged, findings ordered by
+     * severity, one overview and one verdict. Returns an empty text if the merge is not worth trusting (the reviews do
+     * not fit the window, the answer lost the sections or most of the lines the parts reported); the caller then shows the
+     * parts one by one.
+     *
+     * @param tokenBudget how many tokens the reviews may take in the prompt
+     */
+    public String mergeParts(String fileName, List<CodeSplitter.Part> parts, List<String> reviews, int tokenBudget) {
+        String input = ReviewMerge.input(parts, reviews);
+        if (ContextBudget.estimateTokens(input) > tokenBudget) {
+            return "";
+        }
+        Map<String, String> variables = variables();
+        variables.put("fileName", fileName);
+        variables.put("reviews", input);
+        String merged = ModelOutput.toPlainText(ask("merge", variables));
+        return ReviewMerge.keepsFindings(reviews, merged) ? merged : "";
+    }
+
+    private String english(String userPrompt, Map<String, String> variables) {
+        return ModelOutput.toPlainText(ModelOutput.stripNotes(ask("analyze.system", userPrompt, variables), FIRST_TITLE));
     }
 
     private String review(String userPrompt, Map<String, String> variables) {
-        String english = ModelOutput.toPlainText(
-                ModelOutput.stripNotes(ask("analyze.system", userPrompt, variables), FIRST_TITLE));
+        return localize(english(userPrompt, variables));
+    }
+
+    /**
+     * An English review in the selected language: the frame (titles, severity, "line", ...) by text substitution, the
+     * free text by a second call. If the translation damages the frame, the localized English review is returned.
+     */
+    public String localize(String english) {
         if (messages.language() == Language.EN || english.isBlank()) {
             return english;
         }

@@ -1,0 +1,9 @@
+Merge the reviews of the parts of this Java file into one review.
+
+File: {{fileName}}
+
+<reviews>
+{{reviews}}
+</reviews>
+
+Write the merged review, in English.

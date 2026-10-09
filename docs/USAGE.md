@@ -102,12 +102,21 @@ Limits and behaviour worth knowing:
 
 - A file that is too big for the model's context window (see [Configuration reference](#configuration-reference)) is
   reviewed in parts. Each part contains a few methods in full and the outline of the whole file (imports, the head of
-  every type, the signature of every other method), and the line numbers stay those of the file. A part is announced in
-  the output (`--- Big.java, part 2/5 (lines 120-210) ---`) and has its own overview, findings and summary. This takes
-  one model call per part (two for another language than English), so a very big file takes a while; <kbd>Esc</kbd> asks to cancel it.
-  Problems that depend on code in a different part (a field changed in one method and read in another) can be missed;
-  a bigger `octopus.model.num-ctx` makes fewer, larger parts. In the measurements a good model found *more* problems in
-  small parts than in one big request, at the price of more (partly generic) findings, see [PROMPTS.md](PROMPTS.md).
+  every type, the signature of every other method), and the line numbers stay those of the file. The announcement says how
+  many parts there are (`--- Big.java does not fit the model window in one piece (about 7000 tokens), reviewing it in 5 parts ---`).
+  The parts are reviewed one after another, then **one more model call merges their reviews into one**: duplicates
+  joined, findings ordered by severity, one overview and one verdict, and the output shows
+  `--- Big.java (5 parts, merged) ---` and that review. In another language than English only the merged review is
+  translated. If the merged review lost findings (a check compares the lines it names with the lines the parts reported)
+  or the reviews do not fit the window, the parts are shown one by one instead, each as `--- Big.java, part 2/5 (lines
+  120-210) ---`. This takes one model call per part plus the merge, so a very big file takes a while; <kbd>Esc</kbd> asks
+  to cancel it, and nothing of the file is shown before the merge is done.
+- `octopus.analysis.part-tokens` makes the same cut for a file that *fits* the window: with `1000`, every file of more than
+  about 1,000 tokens is reviewed in parts of at most that size. In the measurements a good model found more problems in
+  small parts than in one big request (`gemma4:26b`: 29 of 36 in one piece, 35 of 36 in four parts), the 7B model did not
+  profit, and more parts bring more (partly generic) findings, which the merge joins only if the model is good at it; see
+  [PROMPTS.md](PROMPTS.md). It is off by default (`0`). Problems that depend on code in a different part (a field changed
+  in one method and read in another) can be missed; a bigger `octopus.model.num-ctx` makes fewer, larger parts.
 - Files larger than **512 KB** are skipped and listed with a message. If even the outline leaves too little room in the
   window for code, the file is skipped with a hint to raise `octopus.model.num-ctx`.
 - A review is written in English first and translated for the other languages, see [PROMPTS.md](PROMPTS.md).
@@ -198,6 +207,7 @@ The model is asked to answer in the same language, and so are the mode names, hi
 | `OCTOPUS_LANG` | environment variable, or <kbd>Ctrl</kbd>+<kbd>G</kbd> in the UI | `en`; the UI choice is stored in `~/.octopus-cli/settings.properties` |
 | `octopus.model.num-ctx` | `OCTOPUS_MODEL_NUM_CTX` | `8192` (tokens; the context window asked from Ollama, whose own default cuts long prompts silently) |
 | `octopus.model.max-tokens` | `OCTOPUS_MODEL_MAX_TOKENS` | `4096` (upper limit for one answer) |
+| `octopus.analysis.part-tokens` | `OCTOPUS_ANALYSIS_PART_TOKENS` | `0` (a file that fits the window is reviewed in one piece; above `0`, a file bigger than this many tokens is reviewed in parts of at most that size, even if it fits; 500 to 1200 suited a strong model, see [PROMPTS.md](PROMPTS.md#which-model)) |
 | `octopus.model.think` | `OCTOPUS_MODEL_THINK` | `off` (`think: false` is sent, so a thinking model such as `gemma4` answers directly; `auto` sends nothing and lets the model decide; `low`, `medium`, `high` set the effort of models that take a level, like `gpt-oss`) |
 
 Any Spring Boot property can be overridden with an environment variable (dots and dashes become underscores, upper

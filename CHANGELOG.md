@@ -8,6 +8,25 @@ contain breaking changes.
 
 ## [Unreleased]
 
+## [0.8.0] - 2026-10-09
+
+### Added
+
+- **The reviews of the parts of a big file are merged into one.** After the parts are reviewed (in English, without the
+  translation step), one more call (`merge.system.txt`, `merge.user.txt`) joins duplicates, orders the findings by
+  severity and writes one overview and one verdict; only that review is translated. A check (`ReviewMerge`) refuses a
+  merge that lost the sections or most of the line numbers the parts reported, and the parts are then shown one by one as
+  before. With `gemma4:26b` the merged review had the same recall as the parts (12, 12, 11 of 12 known problems) and was up
+  to 20 % shorter; a weak model keeps duplicates. See [docs/PROMPTS.md](docs/PROMPTS.md).
+- **`octopus.analysis.part-tokens`** (`OCTOPUS_ANALYSIS_PART_TOKENS`, default `0` = off): a file bigger than this many tokens is
+  reviewed in parts of at most that size even if it fits the window. In the measurements `gemma4:26b` found 29 of 36 known
+  problems for the whole file and 35 of 36 in four parts; the 7B model did not profit.
+
+### Changed
+
+- Nothing of a file that is reviewed in parts is shown before its merge is done (the status line shows the progress);
+  before, every part appeared as soon as it was ready.
+
 ## [0.7.0] - 2026-10-08
 
 Three changes that were developed one on top of the other (pull requests #23, #24 and #25) are released together; 0.5.0 and
@@ -252,7 +271,8 @@ Three changes that were developed one on top of the other (pull requests #23, #2
 - `start-agent.bat` launcher for Windows with a model picker.
 - Windows archive with a bundled JRE.
 
-[Unreleased]: https://github.com/burak-can-onarim/blue-ring-octopus-cli/compare/v0.7.0...HEAD
+[Unreleased]: https://github.com/burak-can-onarim/blue-ring-octopus-cli/compare/v0.8.0...HEAD
+[0.8.0]: https://github.com/burak-can-onarim/blue-ring-octopus-cli/compare/v0.7.0...v0.8.0
 [0.7.0]: https://github.com/burak-can-onarim/blue-ring-octopus-cli/compare/v0.4.0...v0.7.0
 [0.4.0]: https://github.com/burak-can-onarim/blue-ring-octopus-cli/compare/v0.3.0...v0.4.0
 [0.3.0]: https://github.com/burak-can-onarim/blue-ring-octopus-cli/compare/v0.2.0...v0.3.0

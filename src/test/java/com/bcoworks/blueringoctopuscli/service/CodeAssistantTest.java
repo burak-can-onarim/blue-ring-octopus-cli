@@ -80,6 +80,58 @@ class CodeAssistantTest {
         assertFalse(model.user(0).contains("1| 7| "), "the numbers of the part are not numbered again");
     }
 
+    private static CodeSplitter.Part part(int number, int count, int first, int last) {
+        return new CodeSplitter.Part(number, count, first, last, List.of(new int[]{first, last}), List.of(), "code");
+    }
+
+    private static final String PART_REVIEW = "OVERVIEW\nIt adds.\n\nFINDINGS\n"
+            + "1. [HIGH] line 12 - overflow. Consequence: wrong sums. Fix: use Math.addExact.\n"
+            + "2. [LOW] line 40 - vague name. Consequence: confusion. Fix: rename.\n"
+            + "3. [LOW] line 50 - another. Consequence: x. Fix: y.\n\nSUMMARY\nFix it.";
+
+    @Test
+    void thePartsAreMergedWithOneCallInEnglishAndWithoutTheirSummaries() {
+        String merged = "OVERVIEW\nIt adds.\n\nFINDINGS\n1. [HIGH] line 12 - overflow.\n2. [LOW] line 40 - vague name.\n"
+                + "3. [LOW] line 50 - another.\n\nSUMMARY\nFix the overflow.";
+        FakeModel model = new FakeModel(merged);
+        CodeAssistant assistant = new CodeAssistant(model, prompts, new Messages("tr"));
+
+        String result = assistant.mergeParts("A.java", List.of(part(1, 2, 1, 20), part(2, 2, 22, 60)),
+                List.of(PART_REVIEW, PART_REVIEW), 5_000);
+
+        assertEquals(merged, result);
+        assertEquals(1, model.calls.size(), "no translation inside the merge");
+        assertTrue(model.system(0).contains("ONE review of the whole file"));
+        assertTrue(model.user(0).contains("File: A.java"));
+        assertTrue(model.user(0).contains("=== Part 2 of 2 (lines 22-60) ==="));
+        assertFalse(model.user(0).contains("Fix it."), "the summaries of the parts are left out");
+    }
+
+    @Test
+    void aMergeThatLosesTheFindingsOrDoesNotFitTheWindowGivesNothing() {
+        FakeModel lossy = new FakeModel("OVERVIEW\nx\n\nFINDINGS\nNo significant issues found.\n\nSUMMARY\nx");
+        assertEquals("", new CodeAssistant(lossy, prompts, new Messages("en"))
+                .mergeParts("A.java", List.of(part(1, 2, 1, 20), part(2, 2, 22, 60)), List.of(PART_REVIEW, PART_REVIEW), 5_000));
+
+        FakeModel never = new FakeModel("anything");
+        assertEquals("", new CodeAssistant(never, prompts, new Messages("en"))
+                .mergeParts("A.java", List.of(part(1, 2, 1, 20), part(2, 2, 22, 60)), List.of(PART_REVIEW, PART_REVIEW), 10));
+        assertEquals(0, never.calls.size(), "reviews that do not fit are not sent");
+    }
+
+    @Test
+    void aMergedEnglishReviewIsLocalizedWithOneTranslationCall() {
+        FakeModel model = new FakeModel("OVERVIEW\nCeviri.");
+        CodeAssistant assistant = new CodeAssistant(model, prompts, new Messages("tr"));
+
+        String result = assistant.localize("OVERVIEW\nIt adds.\n\nFINDINGS\nNo significant issues found.");
+
+        assertEquals(1, model.calls.size());
+        assertTrue(model.user(0).contains(new Messages("tr").get("analysis.title.overview")), model.user(0));
+        assertFalse(result.isBlank());
+        assertEquals("", new CodeAssistant(new FakeModel("x"), prompts, new Messages("tr")).localize(""));
+    }
+
     @Test
     void aPartIsTranslatedLikeAWholeReview() {
         FakeModel model = new FakeModel(ENGLISH_REVIEW, "OVERVIEW\nÇeviri.");
