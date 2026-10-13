@@ -45,4 +45,16 @@ class ModelCatalogTest {
         assertEquals(ModelCatalog.suggestedFor(AppMode.CODE_ANALYSIS), ModelCatalog.suggestedFor(AppMode.DOCUMENTATION));
         assertEquals(ModelCatalog.suggestedFor(AppMode.CODE_GENERATION), ModelCatalog.suggestedFor(AppMode.UNIT_TESTS));
     }
+
+    @Test
+    void ollamasCloudModelsAreRecognisedByTheirTag() {
+        assertTrue(ModelCatalog.isCloud("gpt-oss:120b-cloud"));
+        assertTrue(ModelCatalog.isCloud("gemma4:cloud"));
+        assertTrue(ModelCatalog.isCloud(" Kimi-K2.7-Code:CLOUD "));
+        assertFalse(ModelCatalog.isCloud("gemma4:26b"));
+        assertFalse(ModelCatalog.isCloud("qwen2.5-coder"));
+        assertFalse(ModelCatalog.isCloud("cloud-coder:7b"), "only the tag counts, not the name");
+        assertFalse(ModelCatalog.isCloud(null));
+        assertFalse(ModelCatalog.isCloud(""));
+    }
 }

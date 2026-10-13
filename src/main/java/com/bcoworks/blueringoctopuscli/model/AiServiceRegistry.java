@@ -58,6 +58,13 @@ public class AiServiceRegistry {
     }
 
     /**
+     * The name of the model chosen for the mode.
+     */
+    public String modelNameFor(AppMode mode) {
+        return settings.modelFor(mode);
+    }
+
+    /**
      * The assistant for the model chosen for the mode. Call it once per task so the model stays the same throughout.
      */
     public CodeAssistant forMode(AppMode mode) {

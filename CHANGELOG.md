@@ -8,6 +8,21 @@ change, Z with every commit. A section of this file belongs to a release and car
 
 ## [Unreleased]
 
+### Added
+
+- A **warning before a cloud model is used.** Ollama's cloud models (tag `cloud` or ending in `-cloud`) run on Ollama's servers:
+  the code leaves the computer and the use may be billed to the Ollama account, which a local-first tool should not do
+  silently. The review and the generation print the warning (in all six languages) before they send anything; the
+  user's choice is respected.
+
+### Changed
+
+- **Versioning**: `X.Y.Z` with X for production, Y for a really big change and Z for every commit (see CONTRIBUTING.md). The
+  pom of this release says what the last commit of it said.
+- The launcher `start-agent.bat` offers the models that were measured (`qwen2.5-coder`, `ornith:9b`, `gemma4:26b`) instead of
+  `llama3.1` and `codellama`, which were never measured.
+- The comments of `application.yaml` are in English.
+
 ## [0.8.0] - 2026-10-09
 
 ### Added
