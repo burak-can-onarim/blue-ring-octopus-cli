@@ -2,11 +2,28 @@
 
 All notable changes to this project are documented in this file.
 
-The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/), and this project adheres to
-[Semantic Versioning](https://semver.org/spec/v2.0.0.html). While the major version is `0`, minor versions may
-contain breaking changes.
+The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/). Versions are `X.Y.Z` with the rules in
+[CONTRIBUTING.md](CONTRIBUTING.md#how-releases-work): X when the project goes into production, Y for a really big
+change, Z with every commit. A section of this file belongs to a release and carries the version of its last commit.
 
 ## [Unreleased]
+
+## [0.8.4] - 2026-10-13
+
+### Added
+
+- A **warning before a cloud model is used.** Ollama's cloud models (tag `cloud` or ending in `-cloud`) run on Ollama's servers:
+  the code leaves the computer and the use may be billed to the Ollama account, which a local-first tool should not do
+  silently. The review and the generation print the warning (in all six languages) before they send anything; the
+  user's choice is respected.
+
+### Changed
+
+- **Versioning**: `X.Y.Z` with X for production, Y for a really big change and Z for every commit (see CONTRIBUTING.md). The
+  pom of this release says what the last commit of it said.
+- The launcher `start-agent.bat` offers the models that were measured (`qwen2.5-coder`, `ornith:9b`, `gemma4:26b`) instead of
+  `llama3.1` and `codellama`, which were never measured.
+- The comments of `application.yaml` are in English.
 
 ## [0.8.0] - 2026-10-09
 
@@ -271,7 +288,8 @@ Three changes that were developed one on top of the other (pull requests #23, #2
 - `start-agent.bat` launcher for Windows with a model picker.
 - Windows archive with a bundled JRE.
 
-[Unreleased]: https://github.com/burak-can-onarim/blue-ring-octopus-cli/compare/v0.8.0...HEAD
+[Unreleased]: https://github.com/burak-can-onarim/blue-ring-octopus-cli/compare/v0.8.4...HEAD
+[0.8.4]: https://github.com/burak-can-onarim/blue-ring-octopus-cli/compare/v0.8.0...v0.8.4
 [0.8.0]: https://github.com/burak-can-onarim/blue-ring-octopus-cli/compare/v0.7.0...v0.8.0
 [0.7.0]: https://github.com/burak-can-onarim/blue-ring-octopus-cli/compare/v0.4.0...v0.7.0
 [0.4.0]: https://github.com/burak-can-onarim/blue-ring-octopus-cli/compare/v0.3.0...v0.4.0

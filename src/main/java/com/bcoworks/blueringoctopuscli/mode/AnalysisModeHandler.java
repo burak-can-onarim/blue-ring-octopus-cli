@@ -59,6 +59,8 @@ public class AnalysisModeHandler implements IModeHandler {
             console.println(messages.get("analysis.noPromptNote"));
         }
 
+        CloudModelNotice.warnIfCloud(ai, AppMode.CODE_ANALYSIS, messages, console);
+
         Path target = PathUtils.resolve(request.hasPath() ? request.path() : ".");
         if (!Files.exists(target)) {
             console.println(messages.get("error.pathNotFound", target));

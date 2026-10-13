@@ -153,6 +153,10 @@ compiling code in 27 of 28 tries, but it needs about 18 GB of memory in total an
 `qwen2.5-coder` (7B), which the prompts were tuned with, fits a graphics card with 8 GB and answers in seconds, with
 weaker reviews. Your choice is stored in `~/.octopus-cli/models.properties`.
 
+Ollama also offers **cloud models** (their tag is `cloud` or ends in `-cloud`, for example `gpt-oss:120b-cloud`). They run on
+Ollama's servers, so the code you review leaves your computer and the use may be billed to your Ollama account. The
+application does not stop you, but it prints a warning before it sends anything to one; none is suggested in the list.
+
 ## One-shot commands
 
 When you pass arguments the UI is skipped: the command runs, prints to standard output and exits. This is what you want

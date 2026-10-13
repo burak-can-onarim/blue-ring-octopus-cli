@@ -46,6 +46,7 @@ class AnalysisModeHandlerTest {
     private final List<String> prompts = new ArrayList<>();
     private final AtomicInteger calls = new AtomicInteger();
     private int cancelAfterCalls = Integer.MAX_VALUE;
+    private String modelName = "test-model";
     private final IModeConsole console = new IModeConsole() {
         @Override
         public void step(String message) {
@@ -83,7 +84,7 @@ class AnalysisModeHandlerTest {
             prompts.add(((UserMessage) chat.get(1)).singleText());
             return Response.from(AiMessage.from(model.apply(chat)));
         }, new PromptLibrary(), messages);
-        AiServiceRegistry registry = new AiServiceRegistry(new ModelSettings("test-model"), new PromptLibrary(), messages,
+        AiServiceRegistry registry = new AiServiceRegistry(settings(), new PromptLibrary(), messages,
                 "http://localhost:1", 0.2, Duration.ofSeconds(1), numCtx, 1024) {
             @Override
             public CodeAssistant forMode(AppMode mode) {
@@ -120,6 +121,16 @@ class AnalysisModeHandlerTest {
             case "translate" -> system.startsWith("You translate");
             default -> !isMerge(system) && !system.startsWith("You translate");
         }).count();
+    }
+
+    /** The model of every mode is {@code modelName}, whatever the real settings file of this machine says. */
+    private ModelSettings settings() {
+        return new ModelSettings("unused") {
+            @Override
+            public String modelFor(AppMode mode) {
+                return modelName;
+            }
+        };
     }
 
     @Test
@@ -281,5 +292,26 @@ class AnalysisModeHandlerTest {
 
         assertEquals(1, calls.get());
         assertTrue(printed.stream().anyMatch(line -> line.contains("--- Big.java ---")), printed.toString());
+    }
+
+    @Test
+    void aCloudModelIsAnnouncedBeforeAnyCodeIsSent() throws IOException {
+        Files.writeString(dir.resolve("Small.java"), "class Small {\n}\n");
+        modelName = "gpt-oss:120b-cloud";
+
+        review(handlerWith(8192));
+
+        assertTrue(printed.get(0).startsWith("Warning: the model gpt-oss:120b-cloud runs on Ollama's servers"), printed.toString());
+        assertTrue(Messages.isProblemLine(printed.get(0)), "it is shown as a warning");
+        assertEquals(1, calls.get(), "the review still runs: the user chose the model");
+    }
+
+    @Test
+    void aLocalModelGetsNoCloudWarning() throws IOException {
+        Files.writeString(dir.resolve("Small.java"), "class Small {\n}\n");
+
+        review(handlerWith(8192));
+
+        assertFalse(printed.stream().anyMatch(line -> line.contains("Ollama's servers")), printed.toString());
     }
 }

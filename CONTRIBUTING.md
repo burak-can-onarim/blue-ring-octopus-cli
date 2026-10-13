@@ -80,7 +80,7 @@ Mark breaking changes with `!` (for example `feat!: ...`) and explain them in th
 - [ ] The change is focused and the PR description explains *why*.
 - [ ] `./mvnw verify` passes locally.
 - [ ] Tests were added or updated where it makes sense.
-- [ ] `pom.xml` version is bumped if the change fixes or changes the product.
+- [ ] Every commit raises the last number (`Z` in `X.Y.Z`) of the version in `pom.xml` by one.
 - [ ] Documentation and `CHANGELOG.md` are updated.
 - [ ] No secrets, local paths or generated files are included.
 
@@ -89,10 +89,17 @@ Mark breaking changes with `!` (for example `feat!: ...`) and explain them in th
 Maintainers publish releases by pushing a `vX.Y.Z` tag (for example `v0.2.0`; a suffix such as `-rc.1` marks a
 pre-release). The release workflow runs the tests, builds the JAR with that version, creates a GitHub Release with
 generated notes, a SHA-256 checksum and a build-provenance attestation, and publishes the container image to `ghcr.io`.
-The version lives in `pom.xml` and has no `-SNAPSHOT` suffix: **bump it in every pull request that fixes or changes the
-product** (patch for a fix, minor for a feature while the major version is `0`), and tag a release with the same number
-(`v` + the `pom.xml` version). Documentation- and CI-only changes do not need a bump. Version numbers follow
-[Semantic Versioning](https://semver.org/).
+The version is `X.Y.Z`. It lives in `pom.xml` and has no `-SNAPSHOT` suffix. This project does not follow Semantic
+Versioning; its rules are its own:
+
+- **X** goes up when the project goes into production, that is, when it has several users. It is `0` until then.
+- **Y** goes up only when a change gives the project something really big, a serious change of what it is or can do.
+  Testing a model, a new setting or a fix is not that.
+- **Z** goes up with every commit, in the commit itself.
+- When X goes up, Y and Z become `0`; when Y goes up, Z becomes `0`.
+
+A release is tagged with `v` + the version in `pom.xml` at the moment its last commit is merged; the numbers of the
+commits in between are never tagged.
 
 The release notes are generated from merged pull requests and grouped by label. A workflow labels each pull request
 from its Conventional Commit title (`feat:` becomes *enhancement*, `fix:` becomes *bug*, `docs:` becomes

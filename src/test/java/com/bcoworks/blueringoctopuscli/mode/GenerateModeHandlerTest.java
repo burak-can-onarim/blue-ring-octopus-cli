@@ -34,6 +34,8 @@ class GenerateModeHandlerTest {
     @TempDir
     Path dir;
 
+    private String modelName = "test-model";
+
     private final List<String> printed = new ArrayList<>();
     private final List<String> prompts = new ArrayList<>();
     private final IModeConsole console = new IModeConsole() {
@@ -55,7 +57,7 @@ class GenerateModeHandlerTest {
             prompts.add(((UserMessage) chat.get(1)).singleText());
             return Response.from(AiMessage.from(queue.size() > 1 ? queue.poll() : queue.peek()));
         }, new PromptLibrary(), messages);
-        AiServiceRegistry registry = new AiServiceRegistry(new ModelSettings("test-model"), new PromptLibrary(), messages,
+        AiServiceRegistry registry = new AiServiceRegistry(settings(), new PromptLibrary(), messages,
                 "http://localhost:1", 0.2, Duration.ofSeconds(1), numCtx, 1024) {
             @Override
             public CodeAssistant forMode(AppMode mode) {
@@ -75,6 +77,16 @@ class GenerateModeHandlerTest {
 
     private void generate(GenerateModeHandler handler) throws IOException {
         handler.generate("a greeter", dir.resolve("Greeter.java").toString(), console);
+    }
+
+    /** The model of every mode is {@code modelName}, whatever the real settings file of this machine says. */
+    private ModelSettings settings() {
+        return new ModelSettings("unused") {
+            @Override
+            public String modelFor(AppMode mode) {
+                return modelName;
+            }
+        };
     }
 
     @Test
@@ -173,5 +185,18 @@ class GenerateModeHandlerTest {
         assertEquals(controller, Files.readString(dir.resolve("Greeter.java")).strip());
         assertTrue(output().contains("Compile check passed."), output());
         assertTrue(output().contains("org.springframework.web.bind.annotation"), output());
+    }
+
+    @Test
+    void aCloudModelIsAnnouncedAndALocalOneIsNot() throws IOException {
+        modelName = "gemma4:cloud";
+        generate(handlerAnswering(8192, GOOD));
+        assertTrue(output().contains("Warning: the model gemma4:cloud runs on Ollama's servers"), output());
+
+        printed.clear();
+        modelName = "gemma4:26b";
+        Files.delete(dir.resolve("Greeter.java"));
+        generate(handlerAnswering(8192, GOOD));
+        assertFalse(output().contains("Ollama's servers"), output());
     }
 }

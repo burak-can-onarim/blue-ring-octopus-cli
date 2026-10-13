@@ -3,6 +3,7 @@ package com.bcoworks.blueringoctopuscli.model;
 import com.bcoworks.blueringoctopuscli.context.AppMode;
 
 import java.util.List;
+import java.util.Locale;
 
 /**
  * The Ollama models the model panel suggests, one list per mode, best first. Every model in a list was measured with
@@ -29,6 +30,20 @@ public final class ModelCatalog {
     private static final List<String> UNIT_TESTS = GENERATION;
 
     private ModelCatalog() {
+    }
+
+    /**
+     * Ollama's cloud models ({@code gpt-oss:120b-cloud}, {@code gemma4:cloud}, ...) run on Ollama's servers: the code
+     * leaves the computer and the use is billed to the Ollama account, which is not what a local-first tool promises.
+     */
+    public static boolean isCloud(String model) {
+        if (model == null) {
+            return false;
+        }
+        String name = model.strip().toLowerCase(Locale.ROOT);
+        int colon = name.indexOf(':');
+        String tag = colon < 0 ? "" : name.substring(colon + 1);
+        return tag.equals("cloud") || tag.endsWith("-cloud");
     }
 
     public static List<String> suggestedFor(AppMode mode) {

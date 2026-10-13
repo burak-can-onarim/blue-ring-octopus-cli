@@ -65,6 +65,7 @@ public class GenerateModeHandler implements IModeHandler {
             return;
         }
 
+        CloudModelNotice.warnIfCloud(ai, AppMode.CODE_GENERATION, messages, console);
         console.step(messages.get("generate.working"));
         CodeAssistant assistant = ai.forMode(AppMode.CODE_GENERATION);
         String code = stripMarkdownFences(assistant.generateCode(prompt));

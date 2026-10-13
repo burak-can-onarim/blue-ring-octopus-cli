@@ -14,7 +14,7 @@ spring:
     interactive:
       enabled: false
   main:
-    banner-mode: off # Spring Boot yazısını kaldırır
+    banner-mode: off # no Spring Boot banner
 
 logging:
   file:
@@ -28,8 +28,8 @@ logging:
 langchain4j:
   ollama:
     chat-model:
-      base-url: http://localhost:11434                # Localde JDK25 varsa ve EXE dosyası ile aynı klasördeyse
-      # base-url: http://host.docker.internal:11434   # Docker ile ayağa kaldırıldıysa
+      base-url: http://localhost:11434                # Ollama on this computer
+      # base-url: http://host.docker.internal:11434   # when the application runs in Docker
       model-name: ${AI_MODEL_NAME:qwen2.5-coder}
       temperature: 0.2
       timeout: 5m
