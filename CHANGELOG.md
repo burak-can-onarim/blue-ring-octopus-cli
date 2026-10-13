@@ -8,6 +8,8 @@ change, Z with every commit. A section of this file belongs to a release and car
 
 ## [Unreleased]
 
+## [0.8.4] - 2026-10-13
+
 ### Added
 
 - A **warning before a cloud model is used.** Ollama's cloud models (tag `cloud` or ending in `-cloud`) run on Ollama's servers:
@@ -286,7 +288,8 @@ Three changes that were developed one on top of the other (pull requests #23, #2
 - `start-agent.bat` launcher for Windows with a model picker.
 - Windows archive with a bundled JRE.
 
-[Unreleased]: https://github.com/burak-can-onarim/blue-ring-octopus-cli/compare/v0.8.0...HEAD
+[Unreleased]: https://github.com/burak-can-onarim/blue-ring-octopus-cli/compare/v0.8.4...HEAD
+[0.8.4]: https://github.com/burak-can-onarim/blue-ring-octopus-cli/compare/v0.8.0...v0.8.4
 [0.8.0]: https://github.com/burak-can-onarim/blue-ring-octopus-cli/compare/v0.7.0...v0.8.0
 [0.7.0]: https://github.com/burak-can-onarim/blue-ring-octopus-cli/compare/v0.4.0...v0.7.0
 [0.4.0]: https://github.com/burak-can-onarim/blue-ring-octopus-cli/compare/v0.3.0...v0.4.0
