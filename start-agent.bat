@@ -9,10 +9,10 @@ echo =========================================
 echo      BLUE RING OCTOPUS CLI - BASLATICI
 echo =========================================
 echo.
-echo Kullanilabilir Yerel Modeller:
-echo [1] qwen2.5-coder (Varsayilan - Hizli Kod)
-echo [2] llama3.1 (Genel Amacli)
-echo [3] codellama (Alternatif Kod Modeli)
+echo Olculmus yerel modeller (docs\PROMPTS.md, "Which model"):
+echo [1] qwen2.5-coder  (Varsayilan - hizli, 8 GB ekran kartinda tam calisir)
+echo [2] ornith:9b      (hizli kod incelemesi; urettigi kod sik derlenmez)
+echo [3] gemma4:26b     (en iyi sonuc; yaklasik 18 GB bellek, daha yavas)
 echo.
 
 set /p choice="Lutfen bir model secin (1/2/3 veya ozel model adi yazin) [Varsayilan: 1]: "
@@ -21,8 +21,8 @@ set /p choice="Lutfen bir model secin (1/2/3 veya ozel model adi yazin) [Varsayi
 set AI_MODEL_NAME=qwen2.5-coder
 
 :: Seçime göre ortam değişkenini güncelle
-if "%choice%"=="2" set AI_MODEL_NAME=llama3.1
-if "%choice%"=="3" set AI_MODEL_NAME=codellama
+if "%choice%"=="2" set AI_MODEL_NAME=ornith:9b
+if "%choice%"=="3" set AI_MODEL_NAME=gemma4:26b
 if not "%choice%"=="" if "%choice%" neq "1" if "%choice%" neq "2" if "%choice%" neq "3" set AI_MODEL_NAME=%choice%
 
 echo.
