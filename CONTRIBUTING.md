@@ -80,7 +80,8 @@ Mark breaking changes with `!` (for example `feat!: ...`) and explain them in th
 - [ ] The change is focused and the PR description explains *why*.
 - [ ] `./mvnw verify` passes locally.
 - [ ] Tests were added or updated where it makes sense.
-- [ ] Every commit raises the last number (`Z` in `X.Y.Z`) of the version in `pom.xml` by one.
+- [ ] A commit that changes the code (a new feature or a fix) raises the last number (`Z` in `X.Y.Z`) of the version in
+  `pom.xml` by one; a change of documentation, comments or tests only does not.
 - [ ] Documentation and `CHANGELOG.md` are updated.
 - [ ] No secrets, local paths or generated files are included.
 
@@ -95,11 +96,12 @@ Versioning; its rules are its own:
 - **X** goes up when the project goes into production, that is, when it has several users. It is `0` until then.
 - **Y** goes up only when a change gives the project something really big, a serious change of what it is or can do.
   Testing a model, a new setting or a fix is not that.
-- **Z** goes up with every commit, in the commit itself.
+- **Z** goes up with every commit that changes the code, that is, a new feature or a fix, in the commit itself.
+  A change of documentation, comments or tests only (and of the CI workflows) raises nothing.
 - When X goes up, Y and Z become `0`; when Y goes up, Z becomes `0`.
 
 A release is tagged with `v` + the version in `pom.xml` at the moment its last commit is merged; the numbers of the
-commits in between are never tagged.
+commits in between are never tagged. A pull request that changes no code is merged without a release.
 
 The release notes are generated from merged pull requests and grouped by label. A workflow labels each pull request
 from its Conventional Commit title (`feat:` becomes *enhancement*, `fix:` becomes *bug*, `docs:` becomes
