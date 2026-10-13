@@ -9,6 +9,13 @@ of its last code commit.
 
 ## [Unreleased]
 
+### Changed
+
+- **Ollama's cloud is refused instead of only warned about.** A model whose tag is `cloud` or ends in `-cloud`, and `ollama.com` as the
+  Ollama address, now stop the review and the generation with an error (six languages) before anything is sent; the model
+  registry refuses them for any other path too. The application stays free and local: a cloud model sends the code away and
+  is billed to the Ollama account. The warning of 0.8.4 is gone.
+
 ## [0.8.4] - 2026-10-13
 
 ### Added
