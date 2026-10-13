@@ -59,7 +59,9 @@ public class AnalysisModeHandler implements IModeHandler {
             console.println(messages.get("analysis.noPromptNote"));
         }
 
-        CloudModelNotice.warnIfCloud(ai, AppMode.CODE_ANALYSIS, messages, console);
+        if (CloudGuard.blocks(ai, AppMode.CODE_ANALYSIS, messages, console)) {
+            return;
+        }
 
         Path target = PathUtils.resolve(request.hasPath() ? request.path() : ".");
         if (!Files.exists(target)) {

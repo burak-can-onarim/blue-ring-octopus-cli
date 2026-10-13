@@ -35,6 +35,7 @@ class GenerateModeHandlerTest {
     Path dir;
 
     private String modelName = "test-model";
+    private String baseUrl = "http://localhost:1";
 
     private final List<String> printed = new ArrayList<>();
     private final List<String> prompts = new ArrayList<>();
@@ -58,7 +59,7 @@ class GenerateModeHandlerTest {
             return Response.from(AiMessage.from(queue.size() > 1 ? queue.poll() : queue.peek()));
         }, new PromptLibrary(), messages);
         AiServiceRegistry registry = new AiServiceRegistry(settings(), new PromptLibrary(), messages,
-                "http://localhost:1", 0.2, Duration.ofSeconds(1), numCtx, 1024) {
+                baseUrl, 0.2, Duration.ofSeconds(1), numCtx, 1024) {
             @Override
             public CodeAssistant forMode(AppMode mode) {
                 return assistant;
@@ -188,15 +189,24 @@ class GenerateModeHandlerTest {
     }
 
     @Test
-    void aCloudModelIsAnnouncedAndALocalOneIsNot() throws IOException {
+    void aCloudModelIsRefusedNothingIsSentAndNoFileIsWritten() throws IOException {
         modelName = "gemma4:cloud";
-        generate(handlerAnswering(8192, GOOD));
-        assertTrue(output().contains("Warning: the model gemma4:cloud runs on Ollama's servers"), output());
 
-        printed.clear();
-        modelName = "gemma4:26b";
-        Files.delete(dir.resolve("Greeter.java"));
         generate(handlerAnswering(8192, GOOD));
-        assertFalse(output().contains("Ollama's servers"), output());
+
+        assertTrue(output().startsWith("Error: the model gemma4:cloud is an Ollama cloud model"), output());
+        assertEquals(0, prompts.size(), "no request reaches a cloud model");
+        assertFalse(Files.exists(dir.resolve("Greeter.java")));
+    }
+
+    @Test
+    void ollamasCloudAddressIsRefusedForGenerationToo() throws IOException {
+        baseUrl = "https://ollama.com";
+
+        generate(handlerAnswering(8192, GOOD));
+
+        assertTrue(output().startsWith("Error: the Ollama address https://ollama.com is Ollama's cloud service"), output());
+        assertEquals(0, prompts.size());
+        assertFalse(Files.exists(dir.resolve("Greeter.java")));
     }
 }

@@ -57,4 +57,19 @@ class ModelCatalogTest {
         assertFalse(ModelCatalog.isCloud(null));
         assertFalse(ModelCatalog.isCloud(""));
     }
+
+    @Test
+    void ollamasCloudAddressIsRecognisedByItsHost() {
+        assertTrue(ModelCatalog.isCloudServer("https://ollama.com"));
+        assertTrue(ModelCatalog.isCloudServer("https://ollama.com/api"));
+        assertTrue(ModelCatalog.isCloudServer("https://api.ollama.com:443"));
+        assertTrue(ModelCatalog.isCloudServer(" HTTPS://OLLAMA.COM "));
+        assertFalse(ModelCatalog.isCloudServer("http://localhost:11434"));
+        assertFalse(ModelCatalog.isCloudServer("http://192.168.1.20:11434"));
+        assertFalse(ModelCatalog.isCloudServer("https://notollama.com"));
+        assertFalse(ModelCatalog.isCloudServer("https://ollama.com.example.org"));
+        assertFalse(ModelCatalog.isCloudServer("not a url"));
+        assertFalse(ModelCatalog.isCloudServer(null));
+        assertFalse(ModelCatalog.isCloudServer(""));
+    }
 }
