@@ -9,6 +9,15 @@ of its last code commit.
 
 ## [Unreleased]
 
+## [0.8.5] - 2026-10-13
+
+### Changed
+
+- **Ollama's cloud is refused instead of only warned about.** A model whose tag is `cloud` or ends in `-cloud`, and `ollama.com` as the
+  Ollama address, now stop the review and the generation with an error (six languages) before anything is sent; the model
+  registry refuses them for any other path too. The application stays free and local: a cloud model sends the code away and
+  is billed to the Ollama account. The warning of 0.8.4 is gone.
+
 ## [0.8.4] - 2026-10-13
 
 ### Added
@@ -289,7 +298,8 @@ Three changes that were developed one on top of the other (pull requests #23, #2
 - `start-agent.bat` launcher for Windows with a model picker.
 - Windows archive with a bundled JRE.
 
-[Unreleased]: https://github.com/burak-can-onarim/blue-ring-octopus-cli/compare/v0.8.4...HEAD
+[Unreleased]: https://github.com/burak-can-onarim/blue-ring-octopus-cli/compare/v0.8.5...HEAD
+[0.8.5]: https://github.com/burak-can-onarim/blue-ring-octopus-cli/compare/v0.8.4...v0.8.5
 [0.8.4]: https://github.com/burak-can-onarim/blue-ring-octopus-cli/compare/v0.8.0...v0.8.4
 [0.8.0]: https://github.com/burak-can-onarim/blue-ring-octopus-cli/compare/v0.7.0...v0.8.0
 [0.7.0]: https://github.com/burak-can-onarim/blue-ring-octopus-cli/compare/v0.4.0...v0.7.0

@@ -154,8 +154,11 @@ compiling code in 27 of 28 tries, but it needs about 18 GB of memory in total an
 weaker reviews. Your choice is stored in `~/.octopus-cli/models.properties`.
 
 Ollama also offers **cloud models** (their tag is `cloud` or ends in `-cloud`, for example `gpt-oss:120b-cloud`). They run on
-Ollama's servers, so the code you review leaves your computer and the use may be billed to your Ollama account. The
-application does not stop you, but it prints a warning before it sends anything to one; none is suggested in the list.
+Ollama's servers, so the code you review would leave your computer and the use is billed to your Ollama account. **This
+application refuses them**: the review and the generation print an error and send nothing, whatever way the model was
+chosen, and the same goes for `ollama.com` as the Ollama address (`LANGCHAIN4J_OLLAMA_CHAT_MODEL_BASE_URL`). There is no
+setting to allow it. To switch Ollama's cloud off on your machine as well, set `OLLAMA_NO_CLOUD=1` (or
+`"disable_ollama_cloud": true` in `~/.ollama/server.json`) and restart Ollama.
 
 ## One-shot commands
 

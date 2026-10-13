@@ -72,7 +72,24 @@ public class AiServiceRegistry {
     }
 
     public CodeAssistant forModel(String modelName) {
+        refuseCloud(modelName);
         return cache.computeIfAbsent(modelName, this::create);
+    }
+
+    /**
+     * The address of the Ollama server.
+     */
+    public String baseUrl() {
+        return baseUrl;
+    }
+
+    /**
+     * Last line of defence: whatever path leads here, a cloud model or Ollama's cloud address is never used.
+     */
+    private void refuseCloud(String modelName) {
+        if (ModelCatalog.isCloud(modelName) || ModelCatalog.isCloudServer(baseUrl)) {
+            throw new IllegalStateException("Ollama cloud is not used by this application: " + modelName + " at " + baseUrl);
+        }
     }
 
     /**

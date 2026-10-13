@@ -47,6 +47,7 @@ class AnalysisModeHandlerTest {
     private final AtomicInteger calls = new AtomicInteger();
     private int cancelAfterCalls = Integer.MAX_VALUE;
     private String modelName = "test-model";
+    private String baseUrl = "http://localhost:1";
     private final IModeConsole console = new IModeConsole() {
         @Override
         public void step(String message) {
@@ -85,7 +86,7 @@ class AnalysisModeHandlerTest {
             return Response.from(AiMessage.from(model.apply(chat)));
         }, new PromptLibrary(), messages);
         AiServiceRegistry registry = new AiServiceRegistry(settings(), new PromptLibrary(), messages,
-                "http://localhost:1", 0.2, Duration.ofSeconds(1), numCtx, 1024) {
+                baseUrl, 0.2, Duration.ofSeconds(1), numCtx, 1024) {
             @Override
             public CodeAssistant forMode(AppMode mode) {
                 return assistant;
@@ -295,23 +296,37 @@ class AnalysisModeHandlerTest {
     }
 
     @Test
-    void aCloudModelIsAnnouncedBeforeAnyCodeIsSent() throws IOException {
+    void aCloudModelIsRefusedAndNothingIsSent() throws IOException {
         Files.writeString(dir.resolve("Small.java"), "class Small {\n}\n");
         modelName = "gpt-oss:120b-cloud";
 
         review(handlerWith(8192));
 
-        assertTrue(printed.get(0).startsWith("Warning: the model gpt-oss:120b-cloud runs on Ollama's servers"), printed.toString());
-        assertTrue(Messages.isProblemLine(printed.get(0)), "it is shown as a warning");
-        assertEquals(1, calls.get(), "the review still runs: the user chose the model");
+        assertTrue(printed.get(0).startsWith("Error: the model gpt-oss:120b-cloud is an Ollama cloud model"), printed.toString());
+        assertTrue(Messages.isProblemLine(printed.get(0)), "it is shown as an error");
+        assertEquals(0, calls.get(), "no code is sent to a cloud model");
+        assertEquals(1, printed.size(), "and nothing else happens: " + printed);
     }
 
     @Test
-    void aLocalModelGetsNoCloudWarning() throws IOException {
+    void ollamasCloudAddressIsRefusedAndNothingIsSent() throws IOException {
         Files.writeString(dir.resolve("Small.java"), "class Small {\n}\n");
+        baseUrl = "https://ollama.com";
 
         review(handlerWith(8192));
 
-        assertFalse(printed.stream().anyMatch(line -> line.contains("Ollama's servers")), printed.toString());
+        assertTrue(printed.get(0).startsWith("Error: the Ollama address https://ollama.com is Ollama's cloud service"), printed.toString());
+        assertEquals(0, calls.get());
+    }
+
+    @Test
+    void aLocalModelOnALocalServerIsNotRefused() throws IOException {
+        Files.writeString(dir.resolve("Small.java"), "class Small {\n}\n");
+        modelName = "gemma4:26b";
+
+        review(handlerWith(8192));
+
+        assertFalse(printed.stream().anyMatch(line -> line.contains("cloud")), printed.toString());
+        assertEquals(1, calls.get());
     }
 }

@@ -2,6 +2,7 @@ package com.bcoworks.blueringoctopuscli.model;
 
 import com.bcoworks.blueringoctopuscli.context.AppMode;
 
+import java.net.URI;
 import java.util.List;
 import java.util.Locale;
 
@@ -34,7 +35,8 @@ public final class ModelCatalog {
 
     /**
      * Ollama's cloud models ({@code gpt-oss:120b-cloud}, {@code gemma4:cloud}, ...) run on Ollama's servers: the code
-     * leaves the computer and the use is billed to the Ollama account, which is not what a local-first tool promises.
+     * leaves the computer and the use is billed to the Ollama account. This project is developed and used for free and
+     * locally, so the application refuses them (see {@code CloudGuard}).
      */
     public static boolean isCloud(String model) {
         if (model == null) {
@@ -44,6 +46,25 @@ public final class ModelCatalog {
         int colon = name.indexOf(':');
         String tag = colon < 0 ? "" : name.substring(colon + 1);
         return tag.equals("cloud") || tag.endsWith("-cloud");
+    }
+
+    /**
+     * Ollama's own cloud service ({@code ollama.com}): talking to it directly would send the code away and can be billed.
+     */
+    public static boolean isCloudServer(String baseUrl) {
+        if (baseUrl == null || baseUrl.isBlank()) {
+            return false;
+        }
+        try {
+            String host = URI.create(baseUrl.strip()).getHost();
+            if (host == null) {
+                return false;
+            }
+            host = host.toLowerCase(Locale.ROOT);
+            return host.equals("ollama.com") || host.endsWith(".ollama.com");
+        } catch (IllegalArgumentException e) {
+            return false;
+        }
     }
 
     public static List<String> suggestedFor(AppMode mode) {
